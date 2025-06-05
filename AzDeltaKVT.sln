@@ -5,6 +5,14 @@ VisualStudioVersion = 17.14.36202.13 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzDeltaKVT.API", "AzDeltaKVT.API\AzDeltaKVT.API.csproj", "{3D32BB4C-70EC-48CD-B6CC-FC2366DB701C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzDeltaKVT.Core", "AzDeltaKVT.Core\AzDeltaKVT.Core.csproj", "{0AC45609-CF42-4C82-A16F-B8E1C8EBBD63}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Domain", "Domain", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzDektaKVT.Model", "AzDektaKVT.Model\AzDektaKVT.Model.csproj", "{96394EAA-C8BB-470F-B265-385F143C6285}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzDeltaKVT.Services", "AzDeltaKVT.Services\AzDeltaKVT.Services.csproj", "{AF0B45D1-8465-4934-9B92-03D408FC7C07}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,9 +23,25 @@ Global
 		{3D32BB4C-70EC-48CD-B6CC-FC2366DB701C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3D32BB4C-70EC-48CD-B6CC-FC2366DB701C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3D32BB4C-70EC-48CD-B6CC-FC2366DB701C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0AC45609-CF42-4C82-A16F-B8E1C8EBBD63}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0AC45609-CF42-4C82-A16F-B8E1C8EBBD63}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0AC45609-CF42-4C82-A16F-B8E1C8EBBD63}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0AC45609-CF42-4C82-A16F-B8E1C8EBBD63}.Release|Any CPU.Build.0 = Release|Any CPU
+		{96394EAA-C8BB-470F-B265-385F143C6285}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{96394EAA-C8BB-470F-B265-385F143C6285}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{96394EAA-C8BB-470F-B265-385F143C6285}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{96394EAA-C8BB-470F-B265-385F143C6285}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AF0B45D1-8465-4934-9B92-03D408FC7C07}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF0B45D1-8465-4934-9B92-03D408FC7C07}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF0B45D1-8465-4934-9B92-03D408FC7C07}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF0B45D1-8465-4934-9B92-03D408FC7C07}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0AC45609-CF42-4C82-A16F-B8E1C8EBBD63} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{96394EAA-C8BB-470F-B265-385F143C6285} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9D1D09EE-D48A-423B-BCA5-CF239810F9BE}
