@@ -18,9 +18,20 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
+	bool seed = false;
+
+	if (seed)
+	{
+		using (var scope = app.Services.CreateScope())
+		{
+			var context = scope.ServiceProvider.GetRequiredService<AzDeltaKVTDbContext>();
+			context.Seed();
+		}
+	}
+
+	app.UseSwagger();
 }
-    app.UseSwaggerUI();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
