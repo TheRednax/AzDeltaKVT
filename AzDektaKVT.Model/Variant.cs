@@ -10,13 +10,12 @@ namespace AzDektaKVT.Model
 	public class Variant
 	{
 		[Key]
+		public int VariantId { get; set; }
 		public string Chromosome { get; set; }
-		[Key]
 		public int Position { get; set; }
-		public string Reference { get; set; }
-		
-		[Key]
 		public string Alternative { get; set; }
+
+		public string Reference { get; set; }
 		public string UserInfo { get; set; }
 	}
 
