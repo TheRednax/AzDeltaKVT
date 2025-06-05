@@ -1,17 +1,32 @@
 using AzDeltaKVT.Core;
+using AzDeltaKVT.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 builder.Services.AddDbContext<AzDeltaKVTDbContext>(options =>
 	options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+
+builder.Services.AddScoped<GeneService>();
+builder.Services.AddScoped<TranscriptService>();
+builder.Services.AddScoped<VariantService>();
+builder.Services.AddScoped<GeneVariantService>();
 
 var app = builder.Build();
 
@@ -19,8 +34,10 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-}
     app.UseSwaggerUI();
+}
+
+app.UseCors("AllowAll");
 
 app.UseHttpsRedirection();
 
