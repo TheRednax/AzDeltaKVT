@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36202.13 d17.14
+VisualStudioVersion = 17.14.36202.13
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzDeltaKVT.API", "AzDeltaKVT.API\AzDeltaKVT.API.csproj", "{3D32BB4C-70EC-48CD-B6CC-FC2366DB701C}"
 EndProject
@@ -12,6 +12,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzDektaKVT.Model", "AzDektaKVT.Model\AzDektaKVT.Model.csproj", "{96394EAA-C8BB-470F-B265-385F143C6285}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzDeltaKVT.Services", "AzDeltaKVT.Services\AzDeltaKVT.Services.csproj", "{AF0B45D1-8465-4934-9B92-03D408FC7C07}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzDeltaKVT.UI", "AzDeltaKVT.UI\AzDeltaKVT.UI.csproj", "{09935BCA-A2EB-46C2-B382-0552C8EF5041}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,6 +37,10 @@ Global
 		{AF0B45D1-8465-4934-9B92-03D408FC7C07}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AF0B45D1-8465-4934-9B92-03D408FC7C07}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AF0B45D1-8465-4934-9B92-03D408FC7C07}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09935BCA-A2EB-46C2-B382-0552C8EF5041}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09935BCA-A2EB-46C2-B382-0552C8EF5041}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09935BCA-A2EB-46C2-B382-0552C8EF5041}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09935BCA-A2EB-46C2-B382-0552C8EF5041}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
