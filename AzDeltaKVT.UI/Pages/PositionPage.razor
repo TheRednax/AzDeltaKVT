@@ -1,0 +1,355 @@
+﻿@page "/position"
+@page "/position/{geneId}"
+@page "/position/{geneId}/{chromosome}"
+@page "/position/{geneId}/{chromosome}/{position}"
+@using AzDeltaKVT.UI.Services
+@using AzDeltaKVT.Dto.Results
+@inject ApiService ApiService
+@inject IJSRuntime JSRuntime
+
+<div class="container mt-4">
+    <h2 class="text-accent fw-bold mb-4">Position Page</h2>
+
+    @if (IsLoading)
+    {
+        <div class="d-flex justify-content-center p-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <span class="ms-3">Loading position data...</span>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            @ErrorMessage
+        </div>
+    }
+    else
+    {
+        <!-- Position Information Section -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-body">
+                <h4 class="text-accent fw-bold mb-3">Position Information</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><span class="fw-bold text-accent">Gene Name:</span> @GeneName</p>
+                        <p><span class="fw-bold text-accent">Chromosome:</span> @Chromosome</p>
+                        <p><span class="fw-bold text-accent">Position:</span> @Position</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><span class="fw-bold text-accent">Reference:</span> @Reference</p>
+                        <p><span class="fw-bold text-accent">Alternative:</span> @Alternative</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NM Transcripts Section -->
+        <h4 class="text-accent fw-bold mb-3">Associated NM Transcripts</h4>
+
+        @if (SortedTranscripts.Any())
+        {
+            @foreach (var item in SortedTranscripts.Select((value, index) => new { value, index }))
+            {
+                <div class="card mb-3 shadow-sm border-start border-4 @GetPriorityBorderClass(item.value)">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h5 class="text-accent fw-bold mb-3">
+                                    @(item.index + 1)) NM_NUMBER: <span class="text-secondary">@item.value.NmNumber</span>
+                                    <span class="ms-2">@((MarkupString)GetPriorityBadge(item.value))</span>
+                                </h5>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <ul class="list-unstyled">
+                                            <li class="mb-1">
+                                                <span class="text-accent fw-bold">Is_Select:</span>
+                                                <span class="badge @(item.value.IsSelect ? "bg-success" : "bg-secondary")">
+                                                    @(item.value.IsSelect ? "Yes" : "No")
+                                                </span>
+                                            </li>
+                                            <li class="mb-1">
+                                                <span class="text-accent fw-bold">Is_Clinical:</span>
+                                                <span class="badge @(item.value.IsClinical ? "bg-info" : "bg-secondary")">
+                                                    @(item.value.IsClinical ? "Yes" : "No")
+                                                </span>
+                                            </li>
+                                            <li class="mb-1">
+                                                <span class="text-accent fw-bold">Is_InHouse:</span>
+                                                <span class="badge @(item.value.IsInHouse ? "bg-primary" : "bg-secondary")">
+                                                    @(item.value.IsInHouse ? "Yes" : "No")
+                                                </span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        @{
+                                            var geneVariant = GetGeneVariantForTranscript(item.value.NmNumber);
+                                        }
+                                        <ul class="list-unstyled">
+                                            <li class="mb-1">
+                                                <span class="text-accent fw-bold">Biological Effect:</span>
+                                                <span class="text-secondary">@(string.IsNullOrEmpty(geneVariant?.BiologicalEffect) ? "N/A" : geneVariant.BiologicalEffect)</span>
+                                            </li>
+                                            <li class="mb-1">
+                                                <span class="text-accent fw-bold">Classification:</span>
+                                                @if (!string.IsNullOrEmpty(geneVariant?.Classification))
+                                                {
+                                                    <span class="badge @GetClassificationBadgeClass(geneVariant.Classification)">
+                                                        @geneVariant.Classification
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">N/A</span>
+                                                }
+                                            </li>
+                                            <li class="mb-1">
+                                                <span class="text-accent fw-bold">User_Info:</span>
+                                                <span class="text-secondary">@(string.IsNullOrEmpty(geneVariant?.UserInfo) ? "N/A" : geneVariant.UserInfo)</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ms-3">
+                                <button class="btn btn-outline-primary fw-bold px-4" @onclick="() => EditItem(item.value)">
+                                    <i class="bi bi-pencil-square me-2"></i>Edit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                No NM transcripts found for this position.
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public string? GeneId { get; set; }
+    [Parameter] public string? Chromosome { get; set; }
+    [Parameter] public string? Position { get; set; }
+
+    // Position data - loaded from API using existing DTOs
+    private string GeneName = "";
+    private string Reference = "";
+    private string Alternative = "";
+    private bool IsLoading = true;
+    private string ErrorMessage = "";
+
+    // Use existing DTOs only - no custom classes
+    private List<NmTranscriptResult> Transcripts = new();
+    private List<GeneVariantResult> GeneVariants = new();
+
+    // Sorted list according to specifications using existing DTO
+    private List<NmTranscriptResult> SortedTranscripts =>
+        Transcripts
+            .OrderBy(x => GetSortPriority(x))
+            .ThenBy(x => x.NmNumber)
+            .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Debug: Log parameters
+        Console.WriteLine($"PositionPage parameters - GeneId: '{GeneId}', Chromosome: '{Chromosome}', Position: '{Position}'");
+
+        await LoadPositionData();
+    }
+
+    private async Task LoadPositionData()
+    {
+        try
+        {
+            IsLoading = true;
+            ErrorMessage = "";
+
+            // Debug parameters
+            Console.WriteLine($"Loading data - GeneId: '{GeneId}', Chromosome: '{Chromosome}', Position: '{Position}'");
+
+            if (!string.IsNullOrEmpty(GeneId))
+            {
+                Console.WriteLine($"Loading gene data for: {GeneId}");
+                await LoadGeneData(GeneId);
+            }
+            else if (!string.IsNullOrEmpty(Chromosome) && !string.IsNullOrEmpty(Position))
+            {
+                Console.WriteLine($"Loading position data for: {Chromosome}:{Position}");
+                await LoadPositionData(Chromosome, Position);
+            }
+            else
+            {
+                // No URL parameters - try to get the first available gene from API
+                Console.WriteLine("No parameters provided, trying to load first available gene");
+
+                var allGenes = await ApiService.GetAllGenesAsync();
+                if (allGenes.Any())
+                {
+                    var firstGene = allGenes.First();
+                    Console.WriteLine($"Loading first available gene: {firstGene.Name}");
+                    await LoadGeneData(firstGene.Name);
+                }
+                else
+                {
+                    ErrorMessage = "No genes found in database. Please provide a gene name or chromosome and position.";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error loading position data: {ex.Message}";
+            Console.WriteLine($"LoadPositionData error: {ex}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task LoadGeneData(string geneName)
+    {
+        var gene = await ApiService.GetGeneByNameAsync(geneName);
+        if (gene != null)
+        {
+            GeneName = gene.Name;
+
+            // Convert to existing DTO
+            Transcripts = gene.NmNumbers?.Select(t => new NmTranscriptResult
+                {
+                    NmNumber = t.NmNumber ?? "",
+                    GeneId = t.GeneId ?? "",
+                    IsSelect = t.IsSelect,
+                    IsClinical = t.IsClinical,
+                    IsInHouse = t.IsInHouse
+                }).ToList() ?? new List<NmTranscriptResult>();
+
+            // Load variant info for position
+            var variants = gene.Variants?.Select(v => new VariantResult
+                {
+                    VariantId = v.VariantId,
+                    Chromosome = v.Chromosome,
+                    Position = v.Position,
+                    Reference = v.Reference,
+                    Alternative = v.Alternative,
+                    UserInfo = v.UserInfo
+                }).ToList() ?? new List<VariantResult>();
+
+            // Set position info from variants
+            if (variants.Any())
+            {
+                var firstVariant = variants.First();
+                if (string.IsNullOrEmpty(this.Chromosome))
+                    this.Chromosome = firstVariant.Chromosome ?? "";
+                if (string.IsNullOrEmpty(this.Position))
+                    this.Position = firstVariant.Position?.ToString() ?? "";
+                Reference = firstVariant.Reference ?? "";
+                Alternative = firstVariant.Alternative ?? "";
+            }
+
+            // Load gene variants using existing DTO
+            GeneVariants = await ApiService.GetGeneVariantsForVariantsAsync(variants);
+        }
+        else
+        {
+            ErrorMessage = $"Gene '{geneName}' not found.";
+        }
+    }
+
+    private async Task LoadPositionData(string chromosome, string position)
+    {
+        if (int.TryParse(position, out int pos))
+        {
+            var variants = await ApiService.SearchVariantsAsync(chromosome, pos);
+            if (variants.Any())
+            {
+                var variant = variants.First();
+                this.Chromosome = variant.Chromosome ?? "";
+                this.Position = variant.Position?.ToString() ?? "";
+                Reference = variant.Reference ?? "";
+                Alternative = variant.Alternative ?? "";
+
+                var allGenes = await ApiService.GetAllGenesAsync();
+                var associatedGene = allGenes.FirstOrDefault(g =>
+                    g.Chromosome == chromosome &&
+                    variant.Position >= g.Start &&
+                    variant.Position <= g.Stop);
+
+                if (associatedGene != null)
+                {
+                    await LoadGeneData(associatedGene.Name);
+                }
+                else
+                {
+                    ErrorMessage = $"No gene found containing position {chromosome}:{position}";
+                }
+            }
+            else
+            {
+                ErrorMessage = $"No variants found at {chromosome}:{position}";
+            }
+        }
+    }
+
+    private GeneVariantResult? GetGeneVariantForTranscript(string nmNumber)
+    {
+        return GeneVariants.FirstOrDefault(gv => gv.NmTranscript?.NmNumber == nmNumber);
+    }
+
+    private int GetSortPriority(NmTranscriptResult transcript)
+    {
+        if (transcript.IsInHouse) return 1;   // InHouse first
+        if (transcript.IsSelect) return 2;    // Select second
+        if (transcript.IsClinical) return 3;  // Clinical third
+        return 4;                             // Others last
+    }
+
+    private string GetPriorityBorderClass(NmTranscriptResult transcript)
+    {
+        return GetSortPriority(transcript) switch
+        {
+            1 => "border-primary",   // InHouse
+            2 => "border-success",   // Select
+            3 => "border-info",      // Clinical
+            _ => "border-secondary"  // Others
+        };
+    }
+
+    private string GetPriorityBadge(NmTranscriptResult transcript)
+    {
+        return GetSortPriority(transcript) switch
+        {
+            1 => "<span class=\"badge bg-primary ms-1\">InHouse</span>",
+            2 => "<span class=\"badge bg-success ms-1\">Select</span>",
+            3 => "<span class=\"badge bg-info ms-1\">Clinical</span>",
+            _ => ""
+        };
+    }
+
+    private string GetClassificationBadgeClass(string classification)
+    {
+        return classification?.ToLower() switch
+        {
+            "pathogenic" => "bg-danger",
+            "likely pathogenic" => "bg-warning text-dark",
+            "benign" => "bg-success",
+            "likely benign" => "bg-light text-dark",
+            "uncertain significance" => "bg-secondary",
+            _ => "bg-secondary"
+        };
+    }
+
+    private async Task EditItem(NmTranscriptResult transcript)
+    {
+        await JSRuntime.InvokeVoidAsync("console.log", $"Edit clicked for: {transcript.NmNumber}");
+    }
+}
