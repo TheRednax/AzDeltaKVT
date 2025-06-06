@@ -18,14 +18,20 @@ namespace AzDeltaKVT.UI.Services
             };
         }
 
-        // Gene API calls
+        // Gene API calls - Updated for new controller structure
         public async Task<List<Gene>> GetAllGenesAsync()
         {
             var response = await _httpClient.GetAsync("/genes");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"GetAllGenes API Response: {json}"); // Debug log
                 return JsonSerializer.Deserialize<List<Gene>>(json, _jsonOptions) ?? new List<Gene>();
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"GetAllGenes API Error: {response.StatusCode} - {error}");
             }
             return new List<Gene>();
         }
@@ -38,7 +44,7 @@ namespace AzDeltaKVT.UI.Services
                 Chromosome = "",
                 Start = 0,
                 Stop = 0,
-                UserInfo = "",
+                UserInfo = (string?)null,
                 Nm_Number = nmNumber ?? "",
                 Position = position
             };
@@ -50,7 +56,13 @@ namespace AzDeltaKVT.UI.Services
             if (response.IsSuccessStatusCode)
             {
                 var responseJson = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"SearchGenes API Response: {responseJson}"); // Debug log
                 return JsonSerializer.Deserialize<List<Gene>>(responseJson, _jsonOptions) ?? new List<Gene>();
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"SearchGenes API Error: {response.StatusCode} - {error}");
             }
             return new List<Gene>();
         }
@@ -61,7 +73,7 @@ namespace AzDeltaKVT.UI.Services
             return genes.FirstOrDefault(g => g.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
         }
 
-        // Transcript API calls
+        // Transcript API calls - Keep same structure (not changed)
         public async Task<NmTranscript?> GetTranscriptAsync(string nmNumber)
         {
             var response = await _httpClient.GetAsync($"/transcripts/{Uri.EscapeDataString(nmNumber)}");
@@ -73,47 +85,56 @@ namespace AzDeltaKVT.UI.Services
             return null;
         }
 
-        // Variant API calls
-        public async Task<List<Variant>> GetVariantsAsync(string? chromosome = null, int? position = null)
+        // Variant API calls - Updated for new controller structure
+        public async Task<List<Variant>> GetAllVariantsAsync()
         {
-            var url = "/variants";
-            var queryParams = new List<string>();
-
-            if (!string.IsNullOrEmpty(chromosome))
-            {
-                queryParams.Add($"chrom={Uri.EscapeDataString(chromosome)}");
-            }
-            if (position.HasValue)
-            {
-                queryParams.Add($"position={position.Value}");
-            }
-
-            if (queryParams.Any())
-            {
-                url += "?" + string.Join("&", queryParams);
-            }
-
-            var response = await _httpClient.GetAsync(url);
+            var response = await _httpClient.GetAsync("/variants");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"GetAllVariants API Response: {json}"); // Debug log
                 return JsonSerializer.Deserialize<List<Variant>>(json, _jsonOptions) ?? new List<Variant>();
+            }
+            return new List<Variant>();
+        }
+
+        public async Task<List<Variant>> SearchVariantsAsync(string? chromosome = null, int? position = null, int? variantId = null)
+        {
+            var request = new
+            {
+                VariantId = variantId ?? 0,
+                Chromosome = chromosome ?? "",
+                Position = position ?? 0,
+                Alternative = "",
+                Reference = "",
+                UserInfo = (string?)null
+            };
+
+            var json = JsonSerializer.Serialize(request, _jsonOptions);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync("/variants/get", content);
+            if (response.IsSuccessStatusCode)
+            {
+                var responseJson = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"SearchVariants API Response: {responseJson}"); // Debug log
+                return JsonSerializer.Deserialize<List<Variant>>(responseJson, _jsonOptions) ?? new List<Variant>();
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"SearchVariants API Error: {response.StatusCode} - {error}");
             }
             return new List<Variant>();
         }
 
         public async Task<Variant?> GetVariantAsync(int id)
         {
-            var response = await _httpClient.GetAsync($"/variants/{id}");
-            if (response.IsSuccessStatusCode)
-            {
-                var json = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<Variant>(json, _jsonOptions);
-            }
-            return null;
+            var variants = await SearchVariantsAsync(variantId: id);
+            return variants.FirstOrDefault();
         }
 
-        // Gene Variant API calls
+        // Gene Variant API calls - Keep same structure (not changed)
         public async Task<List<GeneVariant>> GetGeneVariantsAsync()
         {
             var response = await _httpClient.GetAsync("/genevariants");
@@ -128,7 +149,8 @@ namespace AzDeltaKVT.UI.Services
         // Helper methods for complex operations
         public async Task<List<Variant>> GetVariantsInGeneRangeAsync(Gene gene)
         {
-            var allVariants = await GetVariantsAsync(gene.Chromosome);
+            // Get all variants on same chromosome, then filter by range
+            var allVariants = await SearchVariantsAsync(chromosome: gene.Chromosome);
             return allVariants.Where(v =>
                 v.Position >= gene.Start &&
                 v.Position <= gene.Stop).ToList();
@@ -139,6 +161,16 @@ namespace AzDeltaKVT.UI.Services
             var allGeneVariants = await GetGeneVariantsAsync();
             return allGeneVariants.Where(gv =>
                 variants.Any(v => v.VariantId == gv.VariantId)).ToList();
+        }
+
+        // Convenience methods that use the updated endpoints
+        public async Task<List<Variant>> GetVariantsAsync(string? chromosome = null, int? position = null)
+        {
+            if (!string.IsNullOrEmpty(chromosome) || position.HasValue)
+            {
+                return await SearchVariantsAsync(chromosome, position);
+            }
+            return await GetAllVariantsAsync();
         }
     }
 

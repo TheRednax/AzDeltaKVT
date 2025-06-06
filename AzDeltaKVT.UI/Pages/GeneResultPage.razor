@@ -1,169 +1,101 @@
 ﻿@page "/gene-results"
-@using System.Text.Json
-@inject HttpClient Http
+@using AzDeltaKVT.UI.Services
+@using static AzDeltaKVT.UI.Services.ApiService
+@inject ApiService Api
 @inject NavigationManager Navigation
 
 <PageTitle>Gene Results</PageTitle>
 
-<div class="gene-results-page px-8 py-6">
-    <h1 class="text-3xl font-bold text-orange-700 mb-6">Search Results</h1>
+<div class="container py-4">
+    <h1 class="h2 text-warning mb-4">Search Results</h1>
 
     @if (isLoading)
     {
-        <div class="flex justify-center items-center py-8">
-            <div class="text-xl text-orange-700">Loading...</div>
+        <div class="d-flex justify-content-center align-items-center py-5">
+            <div class="spinner-border text-warning" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <span class="ms-3 h5 text-warning">Loading...</span>
         </div>
     }
     else if (hasError)
     {
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div class="alert alert-danger" role="alert">
             <strong>Error:</strong> @errorMessage
         </div>
     }
-    else if (searchType == "gene" && geneResults != null && geneResults.Any())
+    else
     {
-        <!-- Gene Search Results -->
-        <section class="mb-8">
-            <h2 class="text-2xl font-semibold text-orange-700 mb-4">Genes Found</h2>
-            <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                <table class="min-w-full">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gene Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chromosome</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stop</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Available Transcripts</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
+        <!-- Gene Search Results Section -->
+        <section class="mb-5">
+            <h2 class="h4 text-warning mb-3">Gene search result</h2>
+            @if (geneResults != null && geneResults.Any())
+            {
+                <div class="card">
+                    <div class="card-body">
                         @foreach (var gene in geneResults)
                         {
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <button @onclick="() => NavigateToGenePage(gene.Name)" 
-                                            class="text-black underline hover:text-orange-700">
-                                        @gene.Name
-                                    </button>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">@gene.Chromosome</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">@gene.Start</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">@gene.Stop</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    @if (geneTranscripts.ContainsKey(gene.Name))
-                                    {
+                            <div class="mb-3">
+                                <button type="button" @onclick="() => NavigateToGenePage(gene.Name)" 
+                                        class="btn btn-link text-dark text-decoration-underline p-0 fw-bold">
+                                    @gene.Name
+                                </button>
+                                @if (geneTranscripts.ContainsKey(gene.Name) && geneTranscripts[gene.Name].Any())
+                                {
+                                    <span class="ms-3">
                                         @foreach (var transcript in geneTranscripts[gene.Name])
                                         {
-                                            <button @onclick="() => NavigateToGenePage(gene.Name, transcript.NmNumber)" 
-                                                    class="text-black underline hover:text-orange-700 mr-2">
+                                            <button type="button" @onclick="() => NavigateToGenePage(gene.Name, transcript.NmNumber)" 
+                                                    class="btn btn-link text-dark text-decoration-underline p-0 me-2">
                                                 @transcript.NmNumber
-                                                @if (transcript.IsInHouse) { <span class="text-green-600">[InHouse]</span> }
-                                                @if (transcript.IsSelect) { <span class="text-blue-600">[Select]</span> }
-                                                @if (transcript.IsClinical) { <span class="text-purple-600">[Clinical]</span> }
+                                                @if (transcript.IsInHouse) { <span class="badge bg-success">InHouse</span> }
+                                                @if (transcript.IsSelect) { <span class="badge bg-primary">Select</span> }
+                                                @if (transcript.IsClinical) { <span class="badge bg-secondary">Clinical</span> }
                                             </button>
                                         }
-                                    }
-                                </td>
-                            </tr>
+                                    </span>
+                                }
+                            </div>
                         }
-                    </tbody>
-                </table>
-            </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="text-muted">No genes found</div>
+            }
         </section>
 
-        <!-- Variants in Found Genes -->
-        @if (variantResults != null && variantResults.Any())
-        {
-            <section class="mb-8">
-                <h2 class="text-2xl font-semibold text-orange-700 mb-4">Variants in Found Genes</h2>
-                <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                    <table class="min-w-full">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chromosome</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alternative</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            @foreach (var variant in variantResults)
-                            {
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <button @onclick="() => NavigateToPositionPage(variant.VariantId)" 
-                                                class="text-black underline hover:text-orange-700">
-                                            @variant.Chromosome
-                                        </button>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <button @onclick="() => NavigateToPositionPage(variant.VariantId)" 
-                                                class="text-black underline hover:text-orange-700">
-                                            @variant.Position
-                                        </button>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">@variant.Reference</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">@variant.Alternative</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        }
-    }
-    else if (searchType == "position" && variantResults != null && variantResults.Any())
-    {
-        <!-- Position Search Results -->
-        <section class="mb-8">
-            <h2 class="text-2xl font-semibold text-orange-700 mb-4">Variants Found</h2>
-            <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                <table class="min-w-full">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chromosome</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alternative</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
+        <!-- Variants Section -->
+        <section class="mb-5">
+            <h2 class="h4 text-warning mb-3">Variants</h2>
+            @if (variantResults != null && variantResults.Any())
+            {
+                <div class="card">
+                    <div class="card-body">
                         @foreach (var variant in variantResults)
                         {
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <button @onclick="() => NavigateToPositionPage(variant.VariantId)" 
-                                            class="text-black underline hover:text-orange-700">
-                                        @variant.Chromosome
-                                    </button>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <button @onclick="() => NavigateToPositionPage(variant.VariantId)" 
-                                            class="text-black underline hover:text-orange-700">
-                                        @variant.Position
-                                    </button>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">@variant.Reference</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">@variant.Alternative</td>
-                            </tr>
+                            <div class="mb-2">
+                                <button type="button" @onclick="() => NavigateToPositionPage(variant.VariantId)" 
+                                        class="btn btn-link text-dark text-decoration-underline p-0">
+                                    @variant.Chromosome - @variant.Position - @variant.Reference - @variant.Alternative
+                                </button>
+                            </div>
                         }
-                    </tbody>
-                </table>
-            </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="text-muted">No variants found</div>
+            }
         </section>
-    }
-    else if (!hasError)
-    {
-        <div class="text-center py-8">
-            <div class="text-xl text-gray-600 mb-4">No results found</div>
-            <div class="text-gray-500">Try adjusting your search criteria</div>
-        </div>
     }
 
     <!-- Add New Gene Button -->
-    <div class="mt-8">
-        <button @onclick="NavigateToAddGene" 
-                class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded">
+    <div class="mt-4">
+        <button type="button" @onclick="NavigateToAddGene" 
+                class="btn btn-danger fw-bold">
             Add New Gene
         </button>
     </div>
@@ -181,9 +113,9 @@
     private string errorMessage = "";
     private string searchType = "";
 
-    private List<GeneModel>? geneResults;
-    private List<VariantModel>? variantResults;
-    private Dictionary<string, List<TranscriptModel>> geneTranscripts = new();
+    private List<Gene>? geneResults;
+    private List<Variant>? variantResults;
+    private Dictionary<string, List<NmTranscript>> geneTranscripts = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -242,60 +174,39 @@
 
     private async Task SearchByGene(string geneName)
     {
-        // Search for genes by name
-        var response = await Http.GetAsync($"/genes?name={Uri.EscapeDataString(geneName)}");
-        if (response.IsSuccessStatusCode)
+        // Use ApiService for gene search
+        geneResults = await Api.SearchGenesAsync(name: geneName);
+        
+        if (geneResults != null && geneResults.Any())
         {
-            var json = await response.Content.ReadAsStringAsync();
-            geneResults = JsonSerializer.Deserialize<List<GeneModel>>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
+            // Sort genes alphabetically by name
+            geneResults = geneResults.OrderBy(g => g.Name).ToList();
 
-            if (geneResults != null)
-            {
-                // Sort genes alphabetically by name
-                geneResults = geneResults.OrderBy(g => g.Name).ToList();
-
-                // Get transcripts for each gene and variants in gene ranges
-                await LoadTranscriptsForGenes();
-                await LoadVariantsForGenes();
-            }
+            // Get variants for these genes
+            await LoadVariantsForGenes();
+            
+            // TODO: Load transcripts - need endpoint to get transcripts by gene
+            await LoadTranscriptsForGenes();
         }
     }
 
     private async Task SearchByNm(string nmNumber)
     {
         // Search for transcript by NM number, then get the associated gene
-        var response = await Http.GetAsync($"/transcripts/{Uri.EscapeDataString(nmNumber)}");
-        if (response.IsSuccessStatusCode)
+        var transcript = await Api.GetTranscriptAsync(nmNumber);
+        
+        if (transcript?.Gene != null)
         {
-            var json = await response.Content.ReadAsStringAsync();
-            var transcript = JsonSerializer.Deserialize<TranscriptModel>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
-            if (transcript?.Gene != null)
-            {
-                geneResults = new List<GeneModel> { transcript.Gene };
-                geneTranscripts[transcript.Gene.Name] = new List<TranscriptModel> { transcript };
-                await LoadVariantsForGenes();
-            }
+            geneResults = new List<Gene> { transcript.Gene };
+            geneTranscripts[transcript.Gene.Name] = new List<NmTranscript> { transcript };
+            await LoadVariantsForGenes();
         }
     }
 
     private async Task SearchByPosition(string chromosome, int position)
     {
-        var response = await Http.GetAsync($"/variants?chrom={Uri.EscapeDataString(chromosome)}&position={position}");
-        if (response.IsSuccessStatusCode)
-        {
-            var json = await response.Content.ReadAsStringAsync();
-            variantResults = JsonSerializer.Deserialize<List<VariantModel>>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-        }
+        // Use ApiService for variant search
+        variantResults = await Api.SearchVariantsAsync(chromosome: chromosome, position: position);
     }
 
     private async Task LoadTranscriptsForGenes()
@@ -304,10 +215,12 @@
 
         foreach (var gene in geneResults)
         {
-            // This is a simplified approach - in a real implementation, you'd need an endpoint 
-            // to get transcripts by gene name or modify the API to include transcripts with genes
-            // For now, we'll create a placeholder
-            geneTranscripts[gene.Name] = new List<TranscriptModel>();
+            // TODO: Need endpoint to get transcripts by gene ID
+            // For now, create empty list
+            if (!geneTranscripts.ContainsKey(gene.Name))
+            {
+                geneTranscripts[gene.Name] = new List<NmTranscript>();
+            }
         }
     }
 
@@ -315,31 +228,13 @@
     {
         if (geneResults == null) return;
 
-        var allVariants = new List<VariantModel>();
+        var allVariants = new List<Variant>();
 
         foreach (var gene in geneResults)
         {
-            // Search for variants within the gene's range
-            var response = await Http.GetAsync($"/variants?chrom={Uri.EscapeDataString(gene.Chromosome)}");
-            if (response.IsSuccessStatusCode)
-            {
-                var json = await response.Content.ReadAsStringAsync();
-                var variants = JsonSerializer.Deserialize<List<VariantModel>>(json, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-                if (variants != null)
-                {
-                    // Filter variants that fall within the gene's range
-                    var geneVariants = variants.Where(v => 
-                        v.Chromosome == gene.Chromosome && 
-                        v.Position >= gene.Start && 
-                        v.Position <= gene.Stop).ToList();
-                    
-                    allVariants.AddRange(geneVariants);
-                }
-            }
+            // Use ApiService helper method
+            var geneVariants = await Api.GetVariantsInGeneRangeAsync(gene);
+            allVariants.AddRange(geneVariants);
         }
 
         variantResults = allVariants.Distinct().ToList();
@@ -363,35 +258,5 @@
     private void NavigateToAddGene()
     {
         Navigation.NavigateTo("/gene/edit");
-    }
-
-    // Model classes
-    public class GeneModel
-    {
-        public string Name { get; set; } = "";
-        public string Chromosome { get; set; } = "";
-        public int Start { get; set; }
-        public int Stop { get; set; }
-        public string? UserInfo { get; set; }
-    }
-
-    public class VariantModel
-    {
-        public int VariantId { get; set; }
-        public string Chromosome { get; set; } = "";
-        public int Position { get; set; }
-        public string Reference { get; set; } = "";
-        public string Alternative { get; set; } = "";
-        public string? UserInfo { get; set; }
-    }
-
-    public class TranscriptModel
-    {
-        public string NmNumber { get; set; } = "";
-        public string GeneId { get; set; } = "";
-        public bool IsSelect { get; set; }
-        public bool IsClinical { get; set; }
-        public bool IsInHouse { get; set; }
-        public GeneModel? Gene { get; set; }
     }
 }
