@@ -134,7 +134,7 @@ namespace AzDeltaKVT.Services
             {
                 Name = request.Name,
                 Chromosome = request.Chromosome,
-                Start = request.Start,
+                Start = 0,
                 Stop = request.Stop,
                 UserInfo = request.UserInfo
             };
