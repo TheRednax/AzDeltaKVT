@@ -24,6 +24,7 @@
         "ASPNETCORE_HTTP_PORTS": "8080"
       },
       "publishAllPorts": true,
+      "dockerRunOptions": "-p 32776:8080 -p 32777:8081",
       "useSSL": true
     }
   },
