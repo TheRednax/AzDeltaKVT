@@ -7,7 +7,15 @@ using AzDektaKVT.Model;
 
 namespace AzDeltaKVT.Dto.Results
 {
-	public class GeneResult : Gene
-	{
-	}
+	public class GeneResult
+    {
+        public string Name { get; set; }
+        public string Chromosome { get; set; }
+        public int Start { get; set; }
+        public int Stop { get; set; }
+        public string UserInfo { get; set; }
+
+        public List<NmTranscript> NmNumbers { get; set; } = new();
+        public List<Variant> Variants { get; set; } = new();
+    }
 }

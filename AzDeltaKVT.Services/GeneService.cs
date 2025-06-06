@@ -3,13 +3,6 @@ using AzDeltaKVT.Core;
 using AzDeltaKVT.Dto.Requests;
 using AzDeltaKVT.Dto.Results;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.NetworkInformation;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace AzDeltaKVT.Services
 {
@@ -24,45 +17,61 @@ namespace AzDeltaKVT.Services
 
         public async Task<IList<GeneResult>> Find()
         {
-            var query = _context.Genes
-                .Select(o => new GeneResult
-                {
-                    Name = o.Name,
-                    Chromosome = o.Chromosome,
-                    Start = o.Start,
-                    Stop = o.Stop,
-                });
-
-            var genes = await query
+            var genes = await _context.Genes
+                .OrderBy(g => g.Name) // Sort genes alphabetically
                 .ToListAsync();
 
-            return genes;
+            var results = new List<GeneResult>();
+
+            foreach (var gene in genes)
+            {
+                // Fetch related transcripts
+                var nmTranscripts = await _context.NmTranscripts
+                    .Where(t => t.GeneId == gene.Name)
+                    .ToListAsync();
+
+                // Sort transcripts: InHouse > Select > Clinical > Alphabetical
+                var sortedTranscripts = nmTranscripts
+                    .OrderByDescending(t => t.IsInHouse)
+                    .ThenByDescending(t => t.IsSelect)
+                    .ThenByDescending(t => t.IsClinical)
+                    .ThenBy(t => t.NmNumber)
+                    .ToList();
+
+                results.Add(new GeneResult
+                {
+                    Name = gene.Name,
+                    Chromosome = gene.Chromosome,
+                    Start = gene.Start,
+                    Stop = gene.Stop,
+                    UserInfo = gene.UserInfo,
+                    NmNumbers = sortedTranscripts
+                });
+            }
+
+            return results;
         }
 
-        public async Task<Gene> Get(GeneRequest request)
+        public async Task<IList<GeneResult>> Get(GeneRequest request)
         {
-            var query = _context.Genes.AsQueryable();
+            IQueryable<Gene> query = _context.Genes;
 
+            // Apply filters
             if (!string.IsNullOrEmpty(request.Name))
             {
                 query = query.Where(g => g.Name.Contains(request.Name));
             }
             else if (!string.IsNullOrEmpty(request.Nm_Number))
             {
-                // Lookup the geneId using the NM number
                 var geneId = await _context.NmTranscripts
                     .Where(t => t.NmNumber == request.Nm_Number)
                     .Select(t => t.GeneId)
                     .FirstOrDefaultAsync();
 
-                if (!string.IsNullOrEmpty(geneId))
-                {
-                    query = query.Where(g => g.Name == geneId);
-                }
-                else
-                {
-                    return new GeneResult(); // or return null / NotFound
-                }
+                if (string.IsNullOrEmpty(geneId))
+                    return new List<GeneResult>();
+
+                query = query.Where(g => g.Name == geneId);
             }
             else if (!string.IsNullOrEmpty(request.Chromosome) && request.Position.HasValue)
             {
@@ -73,26 +82,55 @@ namespace AzDeltaKVT.Services
             }
             else
             {
-                return new GeneResult(); // No valid filter applied
+                return new List<GeneResult>();
             }
 
-            var result = await query
-                .Select(g => new GeneResult
-                {
-                    Name = g.Name,
-                    Chromosome = g.Chromosome,
-                    Start = g.Start,
-                    Stop = g.Stop,
-                    UserInfo = g.UserInfo
-                })
-                .FirstOrDefaultAsync();
+            var genes = await query
+                .OrderBy(g => g.Name)
+                .ToListAsync();
 
-            return result ?? new GeneResult(); // fallback
+            var results = new List<GeneResult>();
+
+            foreach (var gene in genes)
+            {
+                // Get associated NM transcripts and sort them
+                var nmNumbers = await _context.NmTranscripts
+                    .Where(t => t.GeneId == gene.Name)
+                    .ToListAsync();
+
+                var orderedNms = nmNumbers
+                    .OrderByDescending(t => t.IsInHouse)
+                    .ThenByDescending(t => t.IsSelect)
+                    .ThenByDescending(t => t.IsClinical)
+                    .ThenBy(t => t.NmNumber)
+                    .ToList();
+
+                // Get variants for gene
+                var variants = await _context.Variants
+                    .Where(v => v.Chromosome == gene.Chromosome &&
+                                v.Position >= gene.Start &&
+                                v.Position <= gene.Stop)
+                    .ToListAsync();
+
+                // Build result
+                results.Add(new GeneResult
+                {
+                    Name = gene.Name,
+                    Chromosome = gene.Chromosome,
+                    Start = gene.Start,
+                    Stop = gene.Stop,
+                    UserInfo = gene.UserInfo,
+                    NmNumbers = orderedNms,
+                    Variants = variants
+                });
+            }
+
+            return results;
         }
 
         public async Task<GeneResult> Create(GeneRequest request)
         {
-            var result = new Gene
+            var entity = new Gene
             {
                 Name = request.Name,
                 Chromosome = request.Chromosome,
@@ -101,16 +139,17 @@ namespace AzDeltaKVT.Services
                 UserInfo = request.UserInfo
             };
 
-            _context.Genes.Add(result);
+            _context.Genes.Add(entity);
             await _context.SaveChangesAsync();
+
             return new GeneResult
             {
-                Name = result.Name,
-                Chromosome = result.Chromosome,
-                Start = result.Start,
-                Stop = result.Stop,
-                UserInfo = result.UserInfo
-            }; ;
+                Name = entity.Name,
+                Chromosome = entity.Chromosome,
+                Start = entity.Start,
+                Stop = entity.Stop,
+                UserInfo = entity.UserInfo
+            };
         }
 
         public async Task<GeneResult> Update(GeneRequest gene)
