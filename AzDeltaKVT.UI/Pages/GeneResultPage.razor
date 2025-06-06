@@ -1,6 +1,7 @@
 ﻿@page "/gene-results"
 @using AzDeltaKVT.UI.Services
-@using static AzDeltaKVT.UI.Services.ApiService
+@using AzDeltaKVT.Dto.Results
+@using AzDektaKVT.Model
 @inject ApiService Api
 @inject NavigationManager Navigation
 
@@ -113,8 +114,9 @@
     private string errorMessage = "";
     private string searchType = "";
 
-    private List<Gene>? geneResults;
-    private List<Variant>? variantResults;
+    // Updated to use DTO types
+    private List<GeneResult>? geneResults;
+    private List<VariantResult>? variantResults;
     private Dictionary<string, List<NmTranscript>> geneTranscripts = new();
 
     protected override async Task OnInitializedAsync()
@@ -174,7 +176,7 @@
 
     private async Task SearchByGene(string geneName)
     {
-        // Use ApiService for gene search
+        // Use ApiService for gene search - now returns GeneResult
         geneResults = await Api.SearchGenesAsync(name: geneName);
         
         if (geneResults != null && geneResults.Any())
@@ -182,11 +184,9 @@
             // Sort genes alphabetically by name
             geneResults = geneResults.OrderBy(g => g.Name).ToList();
 
-            // Get variants for these genes
-            await LoadVariantsForGenes();
-            
-            // TODO: Load transcripts - need endpoint to get transcripts by gene
-            await LoadTranscriptsForGenes();
+            // Extract transcripts and variants from gene response (already included)
+            LoadTranscriptsFromGenes();
+            LoadVariantsFromGenes();
         }
     }
 
@@ -197,44 +197,61 @@
         
         if (transcript?.Gene != null)
         {
-            geneResults = new List<Gene> { transcript.Gene };
-            geneTranscripts[transcript.Gene.Name] = new List<NmTranscript> { transcript };
-            await LoadVariantsForGenes();
+            // Model.Gene doesn't have Variants/NmNumbers - we need to search for the full gene data
+            var fullGenes = await Api.SearchGenesAsync(name: transcript.Gene.Name);
+            
+            if (fullGenes != null && fullGenes.Any())
+            {
+                geneResults = fullGenes;
+                // Add the transcript we found to the transcripts dictionary
+                geneTranscripts[transcript.Gene.Name] = new List<NmTranscript> { transcript };
+                LoadVariantsFromGenes();
+            }
         }
     }
 
     private async Task SearchByPosition(string chromosome, int position)
     {
-        // Use ApiService for variant search
+        // Use ApiService for variant search - now returns VariantResult
         variantResults = await Api.SearchVariantsAsync(chromosome: chromosome, position: position);
     }
 
-    private async Task LoadTranscriptsForGenes()
+    private void LoadTranscriptsFromGenes()
     {
         if (geneResults == null) return;
 
         foreach (var gene in geneResults)
         {
-            // TODO: Need endpoint to get transcripts by gene ID
-            // For now, create empty list
-            if (!geneTranscripts.ContainsKey(gene.Name))
-            {
-                geneTranscripts[gene.Name] = new List<NmTranscript>();
-            }
+            // Transcripts are now included in the gene response
+            geneTranscripts[gene.Name] = gene.NmNumbers ?? new List<NmTranscript>();
         }
     }
 
-    private async Task LoadVariantsForGenes()
+    private void LoadVariantsFromGenes()
     {
         if (geneResults == null) return;
 
-        var allVariants = new List<Variant>();
+        var allVariants = new List<VariantResult>();
 
         foreach (var gene in geneResults)
         {
-            // Use ApiService helper method
-            var geneVariants = await Api.GetVariantsInGeneRangeAsync(gene);
-            allVariants.AddRange(geneVariants);
+            // Variants are now included in the gene response
+            if (gene.Variants != null)
+            {
+                // Convert from Model.Variant to VariantResult
+                foreach (var variant in gene.Variants)
+                {
+                    allVariants.Add(new VariantResult
+                    {
+                        VariantId = variant.VariantId,
+                        Chromosome = variant.Chromosome,
+                        Position = variant.Position,
+                        Reference = variant.Reference,
+                        Alternative = variant.Alternative,
+                        UserInfo = variant.UserInfo
+                    });
+                }
+            }
         }
 
         variantResults = allVariants.Distinct().ToList();
