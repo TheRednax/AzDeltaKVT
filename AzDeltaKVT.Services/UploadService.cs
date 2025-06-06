@@ -72,6 +72,52 @@ namespace AzDeltaKVT.Services
 					}
 				}
 
+				var variants = _dbContext.GeneVariants
+					.Include(gv => gv.Variant)
+					.Include(gv => gv.NmTranscript)
+					.ThenInclude(nm => nm.Gene)
+					.Where(gv => tsvVariants.Select(tsvV => tsvV.Position).Contains(gv.Variant.Position?? 0)
+								 && gv.NmTranscript.IsInHouse).ToList();
+
+				foreach (var tsvVariant in tsvVariants)
+				{
+					var existingVariant = variants.FirstOrDefault(v => v.Variant.Position == tsvVariant.Position);
+					if (existingVariant != null)
+					{
+						result.Rows.Add(new UploadRowResult
+						{
+							Chromosome = existingVariant.Variant.Chromosome,
+							Position = existingVariant.Variant.Position ?? 0,
+							Reference = existingVariant.Variant.Reference,
+							Alternative = existingVariant.Variant.Alternative,
+							GeneName = existingVariant.NmTranscript.Gene.Name,
+							NmNumber = existingVariant.NmTranscript.NmNumber,
+							IsInHouse = existingVariant.NmTranscript.IsInHouse,
+							BiologicalEffect = existingVariant.BiologicalEffect,
+							Classification = existingVariant.Classification,
+							IsKnownPosition = true
+						});
+					}
+					else
+					{
+						result.Rows.Add(new UploadRowResult
+						{
+							Chromosome = tsvVariant.Chromosome,
+							Position = tsvVariant.Position,
+							Reference = tsvVariant.Reference,
+							Alternative = tsvVariant.Alternative,
+							GeneName = null,
+							NmNumber = null,
+							IsInHouse = null,
+							BiologicalEffect = null,
+							Classification = null,
+							IsKnownPosition = false,
+						});
+					}
+				}
+
+				result.Rows = result.Rows.OrderBy(r => r.Position).ToList();
+
 				return result;
 			}
 			catch (Exception ex)
