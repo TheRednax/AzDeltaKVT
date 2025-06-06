@@ -86,3 +86,27 @@ code {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+:root {
+    --main-color: #c2410c; /* Bijvoorbeeld oranje (ex-Tailwind orange-700) */
+    --accent-color: #e76f51; /* Vrije keuze voor extra accentkleur */
+}
+
+.text-main {
+    color: var(--main-color) !important;
+}
+
+.bg-main {
+    background-color: var(--main-color) !important;
+}
+
+.text-accent {
+    color: var(--accent-color) !important;
+}
+
+.bg-accent {
+    background-color: var(--accent-color) !important;
+}
+
+.border-main {
+    border-color: var(--main-color) !important;
+}
