@@ -85,7 +85,6 @@ namespace AzDeltaKVT.Services
                 return new List<GeneResult>();
             }
 
-            // Alphabetical sort by gene name
             var genes = await query
                 .OrderBy(g => g.Name)
                 .ToListAsync();
@@ -94,23 +93,26 @@ namespace AzDeltaKVT.Services
 
             foreach (var gene in genes)
             {
+                // Get associated NM transcripts and sort them
                 var nmNumbers = await _context.NmTranscripts
                     .Where(t => t.GeneId == gene.Name)
                     .ToListAsync();
 
                 var orderedNms = nmNumbers
                     .OrderByDescending(t => t.IsInHouse)
-                    .ThenByDescending(t => t.IsSelect && !t.IsInHouse)
-                    .ThenByDescending(t => t.IsClinical && !t.IsSelect && !t.IsInHouse)
+                    .ThenByDescending(t => t.IsSelect)
+                    .ThenByDescending(t => t.IsClinical)
                     .ThenBy(t => t.NmNumber)
                     .ToList();
 
+                // Get variants for gene
                 var variants = await _context.Variants
                     .Where(v => v.Chromosome == gene.Chromosome &&
                                 v.Position >= gene.Start &&
                                 v.Position <= gene.Stop)
                     .ToListAsync();
 
+                // Build result
                 results.Add(new GeneResult
                 {
                     Name = gene.Name,
