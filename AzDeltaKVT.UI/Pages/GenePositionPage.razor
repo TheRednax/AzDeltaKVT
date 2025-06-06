@@ -1,0 +1,83 @@
+﻿@page "/geneposition"
+
+<div class="container mt-4">
+    <h2 class="text-accent fw-bold mb-4">Position page</h2>
+
+    <div class="mb-4">
+        <p><span class="fw-bold text-accent">Gene Name:</span> @GeneName</p>
+        <p><span class="fw-bold text-accent">Chromosome:</span> @Chromosome</p>
+        <p><span class="fw-bold text-accent">Position:</span> @Position</p>
+        <p><span class="fw-bold text-accent">Reference:</span> @Reference</p>
+        <p><span class="fw-bold text-accent">Alternative:</span> @Alternative</p>
+    </div>
+
+    @foreach (var item in GeneDetails.Select((value, index) => new { value, index }))
+    {
+        <div class="card mb-3 shadow-sm">
+            <div class="card-body">
+                <h5 class="text-accent fw-bold">
+                    @(item.index + 1)) Nm_NUMBER : <span class="text-secondary">@item.value.NmNumber</span>
+                </h5>
+                <ul class="list-unstyled ms-3">
+                    <li><span class="text-accent fw-bold">Is_Select:</span> @item.value.IsSelect</li>
+                    <li><span class="text-accent fw-bold">Is_Clinical:</span> @item.value.IsClinical</li>
+                    <li><span class="text-accent fw-bold">Is_InHouse:</span> @item.value.IsInHouse</li>
+                    <li><span class="text-accent fw-bold">Biological Effect:</span> @item.value.BiologicalEffect</li>
+                    <li><span class="text-accent fw-bold">Classification:</span> @item.value.Classification</li>
+                    <li><span class="text-accent fw-bold">User_Info:</span> @item.value.UserInfo</li>
+                </ul>
+
+                <button class="btn btn-light border text-accent fw-bold px-4" @onclick="() => EditItem(item.value)">Edit</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    // Dummy data - vervang dit met je echte model/dienst
+    private string GeneName = "TP53";
+    private string Chromosome = "17";
+    private string Position = "7579472";
+    private string Reference = "G";
+    private string Alternative = "A";
+
+    private List<GeneDetail> GeneDetails = new()
+    {
+        new GeneDetail
+        {
+            NmNumber = "NM_000546",
+            IsSelect = "Yes",
+            IsClinical = "Yes",
+            IsInHouse = "No",
+            BiologicalEffect = "Missense",
+            Classification = "Pathogenic",
+            UserInfo = "User A"
+        },
+        new GeneDetail
+        {
+            NmNumber = "NM_001126112",
+            IsSelect = "No",
+            IsClinical = "Yes",
+            IsInHouse = "Yes",
+            BiologicalEffect = "Nonsense",
+            Classification = "Likely pathogenic",
+            UserInfo = "User B"
+        }
+    };
+
+    private void EditItem(GeneDetail item)
+    {
+        // Voeg je logica toe voor het bewerken (navigate naar editpagina of dialog openen)
+    }
+
+    public class GeneDetail
+    {
+        public string NmNumber { get; set; }
+        public string IsSelect { get; set; }
+        public string IsClinical { get; set; }
+        public string IsInHouse { get; set; }
+        public string BiologicalEffect { get; set; }
+        public string Classification { get; set; }
+        public string UserInfo { get; set; }
+    }
+}
