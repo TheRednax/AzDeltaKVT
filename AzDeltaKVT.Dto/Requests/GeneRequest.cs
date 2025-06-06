@@ -7,8 +7,9 @@ using AzDektaKVT.Model;
 
 namespace AzDeltaKVT.Dto.Requests
 {
-	public class GeneRequest : Gene
-	{
-		public string Nm_Number { get; set; }
-	}
+	public class GeneRequest: Gene
+    {
+        public string Nm_Number { get; set; }
+        public int? Position { get; set; }
+    }
 }

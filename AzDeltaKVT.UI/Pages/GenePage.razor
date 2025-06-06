@@ -1,0 +1,294 @@
+﻿@page "/gene"
+@using AzDeltaKVT.UI.Services
+@using static AzDeltaKVT.UI.Services.ApiService
+@inject ApiService Api
+@inject NavigationManager Navigation
+
+<PageTitle>Gene Details</PageTitle>
+
+<div class="container py-4">
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center align-items-center py-5">
+            <div class="spinner-border text-warning" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <span class="ms-3 h5 text-warning">Loading...</span>
+        </div>
+    }
+    else if (hasError)
+    {
+        <div class="alert alert-danger" role="alert">
+            <strong>Error:</strong> @errorMessage
+        </div>
+    }
+    else if (currentGene != null)
+    {
+        <!-- Gene Information Section -->
+        <section class="mb-5">
+            <h1 class="h2 text-warning mb-4">Gene: @currentGene.Name</h1>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="h5 mb-0">Gene Information</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Gene Name:</strong> @currentGene.Name</p>
+                            <p><strong>Chromosome:</strong> @currentGene.Chromosome</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Start Position:</strong> @currentGene.Start</p>
+                            <p><strong>Stop Position:</strong> @currentGene.Stop</p>
+                        </div>
+                        @if (!string.IsNullOrEmpty(currentGene.UserInfo))
+                        {
+                            <div class="col-12">
+                                <p><strong>Additional Info:</strong> @currentGene.UserInfo</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Transcript Information Section -->
+        @if (currentTranscript != null)
+        {
+            <section class="mb-5">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="h5 mb-0">NM Transcript Information</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>NM Number:</strong> @currentTranscript.NmNumber</p>
+                                <p><strong>Gene ID:</strong> @currentTranscript.GeneId</p>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex flex-wrap gap-2">
+                                    @if (currentTranscript.IsInHouse) { <span class="badge bg-success">InHouse</span> }
+                                    @if (currentTranscript.IsSelect) { <span class="badge bg-primary">Select</span> }
+                                    @if (currentTranscript.IsClinical) { <span class="badge bg-secondary">Clinical</span> }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        }
+
+        <!-- Known Positions Section -->
+        <section class="mb-5">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="h5 mb-0">Known Positions for this @(currentTranscript != null ? "Transcript" : "Gene")</h3>
+                    <button type="button" @onclick="NavigateToInsertPosition" 
+                            class="btn btn-success btn-sm">
+                        Insert Position
+                    </button>
+                </div>
+                <div class="card-body">
+                    @if (positions != null && positions.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col">Chromosome</th>
+                                        <th scope="col">Position</th>
+                                        <th scope="col">Reference</th>
+                                        <th scope="col">Alternative</th>
+                                        @if (geneVariants.Any())
+                                        {
+                                            <th scope="col">Biological Effect</th>
+                                            <th scope="col">Classification</th>
+                                        }
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var position in positions)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <button type="button" @onclick="() => NavigateToPositionPage(position.VariantId)" 
+                                                        class="btn btn-link text-dark text-decoration-underline p-0">
+                                                    @position.Chromosome
+                                                </button>
+                                            </td>
+                                            <td>
+                                                <button type="button" @onclick="() => NavigateToPositionPage(position.VariantId)" 
+                                                        class="btn btn-link text-dark text-decoration-underline p-0">
+                                                    @position.Position
+                                                </button>
+                                            </td>
+                                            <td>@position.Reference</td>
+                                            <td>@position.Alternative</td>
+                                            @{
+                                                var geneVariant = geneVariants.FirstOrDefault(gv => gv.VariantId == position.VariantId);
+                                            }
+                                            @if (geneVariants.Any())
+                                            {
+                                                <td>@(geneVariant?.BiologicalEffect ?? "-")</td>
+                                                <td>@(geneVariant?.Classification ?? "-")</td>
+                                            }
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-muted text-center py-3">
+                            No known positions found for this @(currentTranscript != null ? "transcript" : "gene").
+                        </div>
+                    }
+                </div>
+            </div>
+        </section>
+
+        <!-- Action Buttons -->
+        <section class="d-flex gap-3">
+            <button type="button" @onclick="NavigateToEditGene" 
+                    class="btn btn-warning">
+                Edit Gene
+            </button>
+            <button type="button" @onclick="NavigateToInsertPosition" 
+                    class="btn btn-success">
+                Insert Position
+            </button>
+        </section>
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <div class="h4 text-muted mb-3">Gene not found</div>
+            <div class="text-muted">The requested gene could not be found in the database.</div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, SupplyParameterFromQuery] public string? Name { get; set; }
+    [Parameter, SupplyParameterFromQuery] public string? Nm { get; set; }
+
+    private bool isLoading = true;
+    private bool hasError = false;
+    private string errorMessage = "";
+
+    private GeneModel? currentGene;
+    private TranscriptModel? currentTranscript;
+    private List<VariantModel> positions = new();
+    private List<GeneVariantModel> geneVariants = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadGeneData();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadGeneData();
+    }
+
+    private async Task LoadGeneData()
+    {
+        if (string.IsNullOrEmpty(Name))
+        {
+            hasError = true;
+            errorMessage = "Gene name is required";
+            isLoading = false;
+            return;
+        }
+
+        isLoading = true;
+        hasError = false;
+        errorMessage = "";
+
+        try
+        {
+            // Load gene information
+            await LoadGene();
+            
+            // Load transcript if NM number provided
+            if (!string.IsNullOrEmpty(Nm))
+            {
+                await LoadTranscript();
+            }
+            
+            // Load positions for this gene
+            await LoadPositions();
+            
+            // Load gene variants for additional info
+            await LoadGeneVariants();
+        }
+        catch (Exception ex)
+        {
+            hasError = true;
+            errorMessage = $"Failed to load gene data: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadGene()
+    {
+        currentGene = await Api.GetGeneAsync(Name!);
+        if (currentGene == null)
+        {
+            hasError = true;
+            errorMessage = "Gene not found";
+        }
+    }
+
+    private async Task LoadTranscript()
+    {
+        if (string.IsNullOrEmpty(Nm)) return;
+        currentTranscript = await Api.GetTranscriptAsync(Nm);
+    }
+
+    private async Task LoadPositions()
+    {
+        if (currentGene == null) return;
+        positions = await Api.GetVariantsInGeneRangeAsync(currentGene);
+    }
+
+    private async Task LoadGeneVariants()
+    {
+        geneVariants = await Api.GetGeneVariantsForVariantsAsync(positions);
+    }
+
+    private void NavigateToPositionPage(int variantId)
+    {
+        Navigation.NavigateTo($"/position?id={variantId}");
+    }
+
+    private void NavigateToEditGene()
+    {
+        var url = $"/gene/edit?name={Uri.EscapeDataString(Name!)}";
+        if (!string.IsNullOrEmpty(Nm))
+        {
+            url += $"&nm={Uri.EscapeDataString(Nm)}";
+        }
+        Navigation.NavigateTo(url);
+    }
+
+    private void NavigateToInsertPosition()
+    {
+        var url = $"/position/edit?geneName={Uri.EscapeDataString(Name!)}";
+        if (!string.IsNullOrEmpty(Nm))
+        {
+            url += $"&nm={Uri.EscapeDataString(Nm)}";
+        }
+        if (currentGene != null)
+        {
+            url += $"&chromosome={Uri.EscapeDataString(currentGene.Chromosome)}";
+        }
+        Navigation.NavigateTo(url);
+    }
+}
