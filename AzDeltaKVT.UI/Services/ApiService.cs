@@ -60,13 +60,13 @@ namespace AzDeltaKVT.UI.Services
             // Use real GeneRequest DTO
             var request = new GeneRequest
             {
-                Name = name ?? "",              // Required string
-                Chromosome = "",                // Required string  
-                Start = 0,                      // Required int
-                Stop = 0,                       // Required int
-                UserInfo = "",                  // Required string - NOT NULL! (werkt al)
-                Nm_Number = nmNumber ?? "",     // Your exact property name
-                Position = position             // Nullable int
+                Name = name ?? "",              
+                Chromosome = "",                
+                Start = 0,                      
+                Stop = 0,                       
+                UserInfo = "",                  
+                Nm_Number = nmNumber ?? "",     
+                Position = position             
             };
 
             var json = JsonSerializer.Serialize(request, _jsonOptions);
@@ -198,7 +198,14 @@ namespace AzDeltaKVT.UI.Services
         // Convenience method to get transcripts from gene
         public List<NmTranscriptResult> GetTranscriptsFromGene(GeneResult gene)
         {
-            return gene.NmNumbers?.Cast<NmTranscriptResult>().ToList() ?? new List<NmTranscriptResult>();
+            return gene.NmNumbers?.Select(t => new NmTranscriptResult
+            {
+                NmNumber = t.NmNumber ?? "",
+                GeneId = t.GeneId ?? "",
+                IsSelect = t.IsSelect,
+                IsClinical = t.IsClinical,
+                IsInHouse = t.IsInHouse
+            }).ToList() ?? new List<NmTranscriptResult>();
         }
 
         // Convenience methods that use the updated endpoints
