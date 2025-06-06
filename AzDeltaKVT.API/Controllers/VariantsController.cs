@@ -1,5 +1,5 @@
 ﻿using AzDeltaKVT.Services;
-using AzDektaKVT.Model;
+using AzDeltaKVT.Dto.Requests;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
@@ -16,55 +16,44 @@ namespace AzDeltaKVT.API.Controllers
             _variantService = variantService;
         }
 
-        // GET /variants?chrom=17&position=41276045&geneId=123
+        // GET /variants
         [HttpGet]
-        public async Task<IActionResult> SearchVariants([FromQuery] string? chrom, [FromQuery] int? position, [FromQuery] int? geneId)
+        public async Task<IActionResult> Find()
         {
-            var variants = await _variantService.SearchAsync(chrom, position, geneId);
-            return Ok(variants);
+            var result = await _variantService.Find();
+            return Ok(result);
         }
 
-        // GET /variants/{id}
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetVariant(int id)
+        // POST /variants/get
+        [HttpPost("get")]
+        public async Task<IActionResult> Get([FromBody] VariantRequest request)
         {
-            var variant = await _variantService.GetByIdAsync(id);
-            if (variant == null)
-                return NotFound();
+            var variant = await _variantService.Get(request);
             return Ok(variant);
         }
 
-        // POST /variants
-        [HttpPost]
-        public async Task<IActionResult> CreateVariant([FromBody] Variant variant)
+        // POST /variants/create
+        [HttpPost("create")]
+        public async Task<IActionResult> Create([FromBody] VariantRequest request)
         {
-            var created = await _variantService.CreateAsync(variant);
-            return CreatedAtAction(nameof(GetVariant), new { id = created.VariantId }, created);
+            var createdVariant = await _variantService.Create(request);
+            return Ok(createdVariant);
         }
 
-        // PUT /variants/{id}
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateVariant(int id, [FromBody] Variant variant)
+        // PUT /variants/update
+        [HttpPut("update")]
+        public async Task<IActionResult> Update([FromBody] VariantRequest request)
         {
-            if (id != variant.VariantId)
-                return BadRequest("Id mismatch");
-
-            var updated = await _variantService.UpdateAsync(id, variant);
-            if (!updated)
-                return NotFound();
-
-            return NoContent();
+            var updated = await _variantService.Update(request);
+            return Ok(updated);
         }
 
-        // DELETE /variants/{id}
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteVariant(int id)
+        // DELETE /variants/delete
+        [HttpDelete("delete")]
+        public async Task<IActionResult> Delete([FromBody] int id)
         {
-            var deleted = await _variantService.DeleteAsync(id);
-            if (!deleted)
-                return NotFound();
-
-            return NoContent();
+            var deleted = await _variantService.Delete(id);
+            return Ok(deleted);
         }
     }
 }
