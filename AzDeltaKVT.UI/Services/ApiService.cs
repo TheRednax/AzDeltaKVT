@@ -1,4 +1,9 @@
-﻿using System.Text.Json;
+﻿using System.Text;
+using System.Text.Json;
+using Microsoft.AspNetCore.Components.Forms;
+using AzDeltaKVT.Dto.Requests;
+using AzDeltaKVT.Dto.Results;
+using AzDektaKVT.Model;
 
 namespace AzDeltaKVT.UI.Services
 {
@@ -16,164 +21,194 @@ namespace AzDeltaKVT.UI.Services
             };
         }
 
-        // Gene API calls
-        public async Task<List<GeneModel>> GetGenesAsync(string? name = null)
+        // Gene API calls - Updated to use real DTOs
+        public async Task<List<GeneResult>> GetAllGenesAsync()
         {
-            var url = "/genes";
-            if (!string.IsNullOrEmpty(name))
-            {
-                url += $"?name={Uri.EscapeDataString(name)}";
-            }
+            Console.WriteLine("GetAllGenesAsync called");
+            var response = await _httpClient.GetAsync("/genes");
+            Console.WriteLine($"GET /genes Response status: {response.StatusCode}");
 
-            var response = await _httpClient.GetAsync(url);
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<List<GeneModel>>(json, _jsonOptions) ?? new List<GeneModel>();
+                Console.WriteLine($"GetAllGenes API Response: {json}"); // Debug log
+                try
+                {
+                    var result = JsonSerializer.Deserialize<List<GeneResult>>(json, _jsonOptions) ?? new List<GeneResult>();
+                    Console.WriteLine($"Deserialized {result.Count} genes");
+                    return result;
+                }
+                catch (JsonException ex)
+                {
+                    Console.WriteLine($"JSON Deserialization error: {ex.Message}");
+                    Console.WriteLine($"Raw JSON: {json}");
+                    return new List<GeneResult>();
+                }
             }
-            return new List<GeneModel>();
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"GetAllGenes API Error: {response.StatusCode} - {error}");
+            }
+            return new List<GeneResult>();
         }
 
-        public async Task<GeneModel?> GetGeneAsync(string name)
+        public async Task<List<GeneResult>> SearchGenesAsync(string? name = null, string? nmNumber = null, int? position = null)
         {
-            var response = await _httpClient.GetAsync($"/genes/{Uri.EscapeDataString(name)}");
+            Console.WriteLine($"SearchGenesAsync called with: name={name}, nmNumber={nmNumber}, position={position}");
+
+            // Use real GeneRequest DTO
+            var request = new GeneRequest
+            {
+                Name = name ?? "",              // Required string
+                Chromosome = "",                // Required string  
+                Start = 0,                      // Required int
+                Stop = 0,                       // Required int
+                UserInfo = "",                  // Required string - NOT NULL! (werkt al)
+                Nm_Number = nmNumber ?? "",     // Your exact property name
+                Position = position             // Nullable int
+            };
+
+            var json = JsonSerializer.Serialize(request, _jsonOptions);
+            Console.WriteLine($"Request JSON: {json}");
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync("/genes/get", content);
+            Console.WriteLine($"Response status: {response.StatusCode}");
+
             if (response.IsSuccessStatusCode)
             {
-                var json = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<GeneModel>(json, _jsonOptions);
+                var responseJson = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"SearchGenes API Response: {responseJson}"); // Debug log
+                try
+                {
+                    var result = JsonSerializer.Deserialize<List<GeneResult>>(responseJson, _jsonOptions) ?? new List<GeneResult>();
+                    Console.WriteLine($"Deserialized {result.Count} genes");
+                    return result;
+                }
+                catch (JsonException ex)
+                {
+                    Console.WriteLine($"JSON Deserialization error: {ex.Message}");
+                    Console.WriteLine($"Raw JSON: {responseJson}");
+                    return new List<GeneResult>();
+                }
             }
-            return null;
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"SearchGenes API Error: {response.StatusCode} - {error}");
+            }
+            return new List<GeneResult>();
         }
 
-        // Transcript API calls
-        public async Task<TranscriptModel?> GetTranscriptAsync(string nmNumber)
+        public async Task<GeneResult?> GetGeneByNameAsync(string name)
+        {
+            var genes = await SearchGenesAsync(name: name);
+            return genes.FirstOrDefault(g => g.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Transcript API calls - Updated to use DTOs
+        public async Task<NmTranscriptResult?> GetTranscriptAsync(string nmNumber)
         {
             var response = await _httpClient.GetAsync($"/transcripts/{Uri.EscapeDataString(nmNumber)}");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<TranscriptModel>(json, _jsonOptions);
+                return JsonSerializer.Deserialize<NmTranscriptResult>(json, _jsonOptions);
             }
             return null;
         }
 
-        // Variant API calls
-        public async Task<List<VariantModel>> GetVariantsAsync(string? chromosome = null, int? position = null)
+        // Variant API calls - Updated to use DTOs
+        public async Task<List<VariantResult>> GetAllVariantsAsync()
         {
-            var url = "/variants";
-            var queryParams = new List<string>();
-
-            if (!string.IsNullOrEmpty(chromosome))
-            {
-                queryParams.Add($"chrom={Uri.EscapeDataString(chromosome)}");
-            }
-            if (position.HasValue)
-            {
-                queryParams.Add($"position={position.Value}");
-            }
-
-            if (queryParams.Any())
-            {
-                url += "?" + string.Join("&", queryParams);
-            }
-
-            var response = await _httpClient.GetAsync(url);
+            var response = await _httpClient.GetAsync("/variants");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<List<VariantModel>>(json, _jsonOptions) ?? new List<VariantModel>();
+                Console.WriteLine($"GetAllVariants API Response: {json}"); // Debug log
+                return JsonSerializer.Deserialize<List<VariantResult>>(json, _jsonOptions) ?? new List<VariantResult>();
             }
-            return new List<VariantModel>();
+            return new List<VariantResult>();
         }
 
-        public async Task<VariantModel?> GetVariantAsync(int id)
+        public async Task<List<VariantResult>> SearchVariantsAsync(string? chromosome = null, int? position = null, int? variantId = null)
         {
-            var response = await _httpClient.GetAsync($"/variants/{id}");
+            // Use real VariantRequest DTO
+            var request = new VariantRequest
+            {
+                VariantId = variantId ?? 0,
+                Chromosome = chromosome ?? "",
+                Position = position ?? 0,
+                Alternative = "",
+                Reference = "",
+                UserInfo = ""  // Required field
+            };
+
+            var json = JsonSerializer.Serialize(request, _jsonOptions);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync("/variants/get", content);
             if (response.IsSuccessStatusCode)
             {
-                var json = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<VariantModel>(json, _jsonOptions);
+                var responseJson = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"SearchVariants API Response: {responseJson}"); // Debug log
+                return JsonSerializer.Deserialize<List<VariantResult>>(responseJson, _jsonOptions) ?? new List<VariantResult>();
             }
-            return null;
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"SearchVariants API Error: {response.StatusCode} - {error}");
+            }
+            return new List<VariantResult>();
         }
 
-        // Gene Variant API calls
-        public async Task<List<GeneVariantModel>> GetGeneVariantsAsync()
+        public async Task<VariantResult?> GetVariantAsync(int id)
+        {
+            var variants = await SearchVariantsAsync(variantId: id);
+            return variants.FirstOrDefault();
+        }
+
+        // Gene Variant API calls - Updated to use DTOs
+        public async Task<List<GeneVariantResult>> GetGeneVariantsAsync()
         {
             var response = await _httpClient.GetAsync("/genevariants");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<List<GeneVariantModel>>(json, _jsonOptions) ?? new List<GeneVariantModel>();
+                return JsonSerializer.Deserialize<List<GeneVariantResult>>(json, _jsonOptions) ?? new List<GeneVariantResult>();
             }
-            return new List<GeneVariantModel>();
+            return new List<GeneVariantResult>();
         }
 
-        public async Task<GeneVariantModel?> GetGeneVariantAsync(string nmId, int variantId)
+        // Helper methods for complex operations - updated for DTOs
+        public async Task<List<VariantResult>> GetVariantsInGeneRangeAsync(GeneResult gene)
         {
-            var response = await _httpClient.GetAsync($"/genevariants/{Uri.EscapeDataString(nmId)}/{variantId}");
-            if (response.IsSuccessStatusCode)
-            {
-                var json = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<GeneVariantModel>(json, _jsonOptions);
-            }
-            return null;
+            // Gene already contains variants from the backend response
+            return gene.Variants?.Cast<VariantResult>().ToList() ?? new List<VariantResult>();
         }
 
-        // Helper method to get variants within a gene range
-        public async Task<List<VariantModel>> GetVariantsInGeneRangeAsync(GeneModel gene)
-        {
-            var allVariants = await GetVariantsAsync(gene.Chromosome);
-            return allVariants.Where(v =>
-                v.Position >= gene.Start &&
-                v.Position <= gene.Stop).ToList();
-        }
-
-        // Helper method to get gene variants for specific variants
-        public async Task<List<GeneVariantModel>> GetGeneVariantsForVariantsAsync(List<VariantModel> variants)
+        public async Task<List<GeneVariantResult>> GetGeneVariantsForVariantsAsync(List<VariantResult> variants)
         {
             var allGeneVariants = await GetGeneVariantsAsync();
             return allGeneVariants.Where(gv =>
                 variants.Any(v => v.VariantId == gv.VariantId)).ToList();
         }
-    }
 
-    // Model classes
-    public class GeneModel
-    {
-        public string Name { get; set; } = "";
-        public string Chromosome { get; set; } = "";
-        public int Start { get; set; }
-        public int Stop { get; set; }
-        public string? UserInfo { get; set; }
-    }
+        // Convenience method to get transcripts from gene
+        public List<NmTranscriptResult> GetTranscriptsFromGene(GeneResult gene)
+        {
+            return gene.NmNumbers?.Cast<NmTranscriptResult>().ToList() ?? new List<NmTranscriptResult>();
+        }
 
-    public class VariantModel
-    {
-        public int VariantId { get; set; }
-        public string Chromosome { get; set; } = "";
-        public int Position { get; set; }
-        public string Reference { get; set; } = "";
-        public string Alternative { get; set; } = "";
-        public string? UserInfo { get; set; }
-    }
-
-    public class TranscriptModel
-    {
-        public string NmNumber { get; set; } = "";
-        public string GeneId { get; set; } = "";
-        public bool IsSelect { get; set; }
-        public bool IsClinical { get; set; }
-        public bool IsInHouse { get; set; }
-        public GeneModel? Gene { get; set; }
-    }
-
-    public class GeneVariantModel
-    {
-        public string NmId { get; set; } = "";
-        public int VariantId { get; set; }
-        public string? BiologicalEffect { get; set; }
-        public string? Classification { get; set; }
-        public string? UserInfo { get; set; }
+        // Convenience methods that use the updated endpoints
+        public async Task<List<VariantResult>> GetVariantsAsync(string? chromosome = null, int? position = null)
+        {
+            if (!string.IsNullOrEmpty(chromosome) || position.HasValue)
+            {
+                return await SearchVariantsAsync(chromosome, position);
+            }
+            return await GetAllVariantsAsync();
+        }
     }
 }

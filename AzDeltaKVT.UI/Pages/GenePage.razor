@@ -1,6 +1,7 @@
 ﻿@page "/gene"
 @using AzDeltaKVT.UI.Services
-@using static AzDeltaKVT.UI.Services.ApiService
+@using AzDeltaKVT.Dto.Results
+@using AzDektaKVT.Model
 @inject ApiService Api
 @inject NavigationManager Navigation
 
@@ -179,10 +180,11 @@
     private bool hasError = false;
     private string errorMessage = "";
 
-    private GeneModel? currentGene;
-    private TranscriptModel? currentTranscript;
-    private List<VariantModel> positions = new();
-    private List<GeneVariantModel> geneVariants = new();
+    // Updated to use DTO types
+    private GeneResult? currentGene;
+    private NmTranscriptResult? currentTranscript;
+    private List<VariantResult> positions = new();
+    private List<GeneVariantResult> geneVariants = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -210,14 +212,14 @@
 
         try
         {
-            // Load gene information
-            await LoadGene();
-            
-            // Load transcript if NM number provided
+            // Load transcript first if NM number provided (may contain gene info)
             if (!string.IsNullOrEmpty(Nm))
             {
                 await LoadTranscript();
             }
+            
+            // Load gene information (either by name or from transcript)
+            await LoadGene();
             
             // Load positions for this gene
             await LoadPositions();
@@ -238,11 +240,15 @@
 
     private async Task LoadGene()
     {
-        currentGene = await Api.GetGeneAsync(Name!);
+        // Only load if we don't have gene data yet
         if (currentGene == null)
         {
-            hasError = true;
-            errorMessage = "Gene not found";
+            currentGene = await Api.GetGeneByNameAsync(Name!);
+            if (currentGene == null)
+            {
+                hasError = true;
+                errorMessage = "Gene not found";
+            }
         }
     }
 
@@ -250,12 +256,36 @@
     {
         if (string.IsNullOrEmpty(Nm)) return;
         currentTranscript = await Api.GetTranscriptAsync(Nm);
+        
+        // If we got transcript but no gene yet, get the full gene data
+        if (currentTranscript?.Gene != null && currentGene == null)
+        {
+            currentGene = await Api.GetGeneByNameAsync(currentTranscript.Gene.Name);
+        }
     }
 
     private async Task LoadPositions()
     {
         if (currentGene == null) return;
-        positions = await Api.GetVariantsInGeneRangeAsync(currentGene);
+        
+        // Variants are now included in the gene response
+        if (currentGene.Variants != null)
+        {
+            // Convert from Model.Variant to VariantResult
+            positions = currentGene.Variants.Select(v => new VariantResult
+            {
+                VariantId = v.VariantId,
+                Chromosome = v.Chromosome,
+                Position = v.Position,
+                Reference = v.Reference,
+                Alternative = v.Alternative,
+                UserInfo = v.UserInfo
+            }).ToList();
+        }
+        else
+        {
+            positions = new List<VariantResult>();
+        }
     }
 
     private async Task LoadGeneVariants()
