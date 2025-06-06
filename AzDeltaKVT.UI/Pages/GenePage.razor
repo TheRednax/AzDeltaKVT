@@ -179,10 +179,10 @@
     private bool hasError = false;
     private string errorMessage = "";
 
-    private GeneModel? currentGene;
-    private TranscriptModel? currentTranscript;
-    private List<VariantModel> positions = new();
-    private List<GeneVariantModel> geneVariants = new();
+    private Gene? currentGene;
+    private NmTranscript? currentTranscript;
+    private List<Variant> positions = new();
+    private List<GeneVariant> geneVariants = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -238,7 +238,7 @@
 
     private async Task LoadGene()
     {
-        currentGene = await Api.GetGeneAsync(Name!);
+        currentGene = await Api.GetGeneByNameAsync(Name!);
         if (currentGene == null)
         {
             hasError = true;

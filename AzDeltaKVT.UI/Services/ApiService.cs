@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+﻿using System.Text;
+using System.Text.Json;
+using Microsoft.AspNetCore.Components.Forms;
 
 namespace AzDeltaKVT.UI.Services
 {
@@ -17,48 +19,62 @@ namespace AzDeltaKVT.UI.Services
         }
 
         // Gene API calls
-        public async Task<List<GeneModel>> GetGenesAsync(string? name = null)
+        public async Task<List<Gene>> GetAllGenesAsync()
         {
-            var url = "/genes";
-            if (!string.IsNullOrEmpty(name))
-            {
-                url += $"?name={Uri.EscapeDataString(name)}";
-            }
-
-            var response = await _httpClient.GetAsync(url);
+            var response = await _httpClient.GetAsync("/genes");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<List<GeneModel>>(json, _jsonOptions) ?? new List<GeneModel>();
+                return JsonSerializer.Deserialize<List<Gene>>(json, _jsonOptions) ?? new List<Gene>();
             }
-            return new List<GeneModel>();
+            return new List<Gene>();
         }
 
-        public async Task<GeneModel?> GetGeneAsync(string name)
+        public async Task<List<Gene>> SearchGenesAsync(string? name = null, string? nmNumber = null, int? position = null)
         {
-            var response = await _httpClient.GetAsync($"/genes/{Uri.EscapeDataString(name)}");
+            var request = new
+            {
+                Name = name ?? "",
+                Chromosome = "",
+                Start = 0,
+                Stop = 0,
+                UserInfo = "",
+                Nm_Number = nmNumber ?? "",
+                Position = position
+            };
+
+            var json = JsonSerializer.Serialize(request, _jsonOptions);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync("/genes/get", content);
             if (response.IsSuccessStatusCode)
             {
-                var json = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<GeneModel>(json, _jsonOptions);
+                var responseJson = await response.Content.ReadAsStringAsync();
+                return JsonSerializer.Deserialize<List<Gene>>(responseJson, _jsonOptions) ?? new List<Gene>();
             }
-            return null;
+            return new List<Gene>();
+        }
+
+        public async Task<Gene?> GetGeneByNameAsync(string name)
+        {
+            var genes = await SearchGenesAsync(name: name);
+            return genes.FirstOrDefault(g => g.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
         }
 
         // Transcript API calls
-        public async Task<TranscriptModel?> GetTranscriptAsync(string nmNumber)
+        public async Task<NmTranscript?> GetTranscriptAsync(string nmNumber)
         {
             var response = await _httpClient.GetAsync($"/transcripts/{Uri.EscapeDataString(nmNumber)}");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<TranscriptModel>(json, _jsonOptions);
+                return JsonSerializer.Deserialize<NmTranscript>(json, _jsonOptions);
             }
             return null;
         }
 
         // Variant API calls
-        public async Task<List<VariantModel>> GetVariantsAsync(string? chromosome = null, int? position = null)
+        public async Task<List<Variant>> GetVariantsAsync(string? chromosome = null, int? position = null)
         {
             var url = "/variants";
             var queryParams = new List<string>();
@@ -81,47 +97,36 @@ namespace AzDeltaKVT.UI.Services
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<List<VariantModel>>(json, _jsonOptions) ?? new List<VariantModel>();
+                return JsonSerializer.Deserialize<List<Variant>>(json, _jsonOptions) ?? new List<Variant>();
             }
-            return new List<VariantModel>();
+            return new List<Variant>();
         }
 
-        public async Task<VariantModel?> GetVariantAsync(int id)
+        public async Task<Variant?> GetVariantAsync(int id)
         {
             var response = await _httpClient.GetAsync($"/variants/{id}");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<VariantModel>(json, _jsonOptions);
+                return JsonSerializer.Deserialize<Variant>(json, _jsonOptions);
             }
             return null;
         }
 
         // Gene Variant API calls
-        public async Task<List<GeneVariantModel>> GetGeneVariantsAsync()
+        public async Task<List<GeneVariant>> GetGeneVariantsAsync()
         {
             var response = await _httpClient.GetAsync("/genevariants");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<List<GeneVariantModel>>(json, _jsonOptions) ?? new List<GeneVariantModel>();
+                return JsonSerializer.Deserialize<List<GeneVariant>>(json, _jsonOptions) ?? new List<GeneVariant>();
             }
-            return new List<GeneVariantModel>();
+            return new List<GeneVariant>();
         }
 
-        public async Task<GeneVariantModel?> GetGeneVariantAsync(string nmId, int variantId)
-        {
-            var response = await _httpClient.GetAsync($"/genevariants/{Uri.EscapeDataString(nmId)}/{variantId}");
-            if (response.IsSuccessStatusCode)
-            {
-                var json = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<GeneVariantModel>(json, _jsonOptions);
-            }
-            return null;
-        }
-
-        // Helper method to get variants within a gene range
-        public async Task<List<VariantModel>> GetVariantsInGeneRangeAsync(GeneModel gene)
+        // Helper methods for complex operations
+        public async Task<List<Variant>> GetVariantsInGeneRangeAsync(Gene gene)
         {
             var allVariants = await GetVariantsAsync(gene.Chromosome);
             return allVariants.Where(v =>
@@ -129,8 +134,7 @@ namespace AzDeltaKVT.UI.Services
                 v.Position <= gene.Stop).ToList();
         }
 
-        // Helper method to get gene variants for specific variants
-        public async Task<List<GeneVariantModel>> GetGeneVariantsForVariantsAsync(List<VariantModel> variants)
+        public async Task<List<GeneVariant>> GetGeneVariantsForVariantsAsync(List<Variant> variants)
         {
             var allGeneVariants = await GetGeneVariantsAsync();
             return allGeneVariants.Where(gv =>
@@ -138,8 +142,8 @@ namespace AzDeltaKVT.UI.Services
         }
     }
 
-    // Model classes
-    public class GeneModel
+    // Simple frontend model classes (only what we need for UI)
+    public class Gene
     {
         public string Name { get; set; } = "";
         public string Chromosome { get; set; } = "";
@@ -148,7 +152,7 @@ namespace AzDeltaKVT.UI.Services
         public string? UserInfo { get; set; }
     }
 
-    public class VariantModel
+    public class Variant
     {
         public int VariantId { get; set; }
         public string Chromosome { get; set; } = "";
@@ -158,17 +162,17 @@ namespace AzDeltaKVT.UI.Services
         public string? UserInfo { get; set; }
     }
 
-    public class TranscriptModel
+    public class NmTranscript
     {
         public string NmNumber { get; set; } = "";
         public string GeneId { get; set; } = "";
         public bool IsSelect { get; set; }
         public bool IsClinical { get; set; }
         public bool IsInHouse { get; set; }
-        public GeneModel? Gene { get; set; }
+        public Gene? Gene { get; set; }
     }
 
-    public class GeneVariantModel
+    public class GeneVariant
     {
         public string NmId { get; set; } = "";
         public int VariantId { get; set; }
