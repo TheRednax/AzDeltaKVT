@@ -11,6 +11,6 @@ namespace AzDeltaKVT.Dto.Results
 	{
 		List<UploadRowResult> Rows { get; set; }
 		IFormFile TsvFile { get; set; }
-
+		public List<string> Errors { get; set; }
 	}
 }
