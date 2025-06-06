@@ -3,6 +3,7 @@ using AzDeltaKVT.Dto.Requests;
 using AzDeltaKVT.Dto.Results;
 using AzDeltaKVT.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
 namespace AzDeltaKVT.API.Controllers
 {
@@ -19,17 +20,17 @@ namespace AzDeltaKVT.API.Controllers
 
         // GET /genevariants
         [HttpGet]
-        public IActionResult Find()
+        public async Task<IActionResult> Find()
         {
-            var results = _geneVariantService.GetAll();
+            var results = await _geneVariantService.Find();
             return Ok(results);
         }
 
         // POST /genevariants/get
         [HttpPost("get")]
-        public IActionResult Get([FromBody] GeneVariantRequest request)
+        public async Task<IActionResult> Get([FromBody] GeneVariantRequest request)
         {
-            var geneVariant = _geneVariantService.GetByIds(request.NmId, request.VariantId);
+            var geneVariant = await _geneVariantService.Get(request.NmId, request.VariantId);
             if (geneVariant == null)
                 return NotFound();
 
@@ -38,25 +39,25 @@ namespace AzDeltaKVT.API.Controllers
 
         // POST /genevariants/create
         [HttpPost("create")]
-        public IActionResult Create([FromBody] GeneVariantRequest request)
+        public async Task<IActionResult> Create([FromBody] GeneVariantRequest request)
         {
-            var created = _geneVariantService.Create(request);
+            var created = await _geneVariantService.Create(request);
             return Ok(created);
         }
 
         // PUT /genevariants/update
         [HttpPut("update")]
-        public IActionResult Update([FromBody] GeneVariantRequest request)
+        public async Task<IActionResult> Update([FromBody] GeneVariantRequest request)
         {
-            var updated = _geneVariantService.Update(request);
+            var updated = await _geneVariantService.Update(request);
             return Ok(updated);
         }
 
         // DELETE /genevariants/delete
         [HttpDelete("delete")]
-        public IActionResult Delete([FromBody] GeneVariantRequest request)
+        public async Task<IActionResult> Delete([FromBody] GeneVariantRequest request)
         {
-            var deleted = _geneVariantService.Delete(request);
+            var deleted = await _geneVariantService.Delete(request);
             return Ok(deleted);
         }
     }
