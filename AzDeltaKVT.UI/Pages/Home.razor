@@ -2,34 +2,36 @@
 
 <PageTitle>Home</PageTitle>
 
-<div class="home-page px-8 py-6">
-    <section class="search-section mb-10">
-        <h2 class="text-3xl font-bold text-orange-700 mb-2">Search</h2>
-        <label class="block font-semibold text-orange-700 mb-1">Gene:</label>
-        <div class="flex gap-4">
-            <input class="w-full p-3 rounded bg-gray-200 text-gray-700" placeholder="Enter gene here" />
-            <button class="bg-gray-300 text-orange-700 font-bold py-2 px-6 rounded">Search</button>
-        </div>
-    </section>
-
-    <section class="position-section mb-10">
-        <h2 class="text-3xl font-bold text-orange-700 mb-2">Postition</h2>
-        <div class="flex flex-wrap gap-4">
-            <div class="flex flex-col">
-                <label class="font-semibold text-orange-700 mb-1">Shr:</label>
-                <input class="p-3 rounded bg-gray-200 text-gray-700" />
-            </div>
-            <div class="flex flex-col">
-                <label class="font-semibold text-orange-700 mb-1">Posi:</label>
-                <input class="p-3 rounded bg-gray-200 text-gray-700" />
-            </div>
-            <div class="flex items-end">
-                <button class="bg-gray-300 text-orange-700 font-bold py-2 px-6 rounded">Search</button>
+<div class="container py-5">
+    <section class="mb-5">
+        <h2 class="h3 text-warning mb-3">Search</h2>
+        <div class="mb-2">
+            <label class="form-label fw-semibold text-warning">Gene:</label>
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Enter gene here" />
+                <button class="btn btn-outline-warning fw-bold" type="button">Search</button>
             </div>
         </div>
     </section>
 
-    <section class="upload-section">
-        <button class="bg-gray-300 text-orange-700 font-bold py-2 px-6 rounded">Upload</button>
+    <section class="mb-5">
+        <h2 class="h3 text-warning mb-3">Position</h2>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold text-warning">Shr:</label>
+                <input type="text" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold text-warning">Posi:</label>
+                <input type="text" class="form-control" />
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button class="btn btn-outline-warning fw-bold w-100" type="button">Search</button>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <button class="btn btn-outline-warning fw-bold">Upload</button>
     </section>
 </div>
