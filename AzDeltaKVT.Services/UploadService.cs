@@ -8,6 +8,7 @@ using AzDeltaKVT.Core;
 using AzDeltaKVT.Dto.Requests;
 using AzDeltaKVT.Dto.Results;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 
 namespace AzDeltaKVT.Services
 {
