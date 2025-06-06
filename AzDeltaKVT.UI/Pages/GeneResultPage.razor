@@ -273,7 +273,17 @@
             {
                 geneResults = fullGenes;
                 // Add the transcript we found to the transcripts dictionary
-                geneTranscripts[transcript.Gene.Name] = new List<NmTranscript> { transcript };
+                geneTranscripts[transcript.Gene.Name] = new List<NmTranscript>
+                {
+                new NmTranscript
+                {
+                   NmNumber = transcript.NmNumber,
+				   GeneId = transcript.GeneId,
+				   IsSelect = transcript.IsSelect,
+				   IsInHouse = transcript.IsInHouse,
+				   IsClinical = transcript.IsClinical
+                }
+                };
                 LoadVariantsFromGenes();
             }
         }
