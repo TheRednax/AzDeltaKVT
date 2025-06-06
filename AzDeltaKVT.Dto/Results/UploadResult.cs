@@ -5,10 +5,12 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 
-namespace AzDeltaKVT.Dto.Requests
+namespace AzDeltaKVT.Dto.Results
 {
-	public class UploadRequest
+	public class UploadResult
 	{
-		public IFormFile TsvFile { get; set; }
+		List<UploadRowResult> Rows { get; set; }
+		IFormFile TsvFile { get; set; }
+
 	}
 }
