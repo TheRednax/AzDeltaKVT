@@ -8,15 +8,15 @@
 <PageTitle>Gene Results</PageTitle>
 
 <div class="container py-4">
-    <h1 class="h2 text-warning mb-4">Search Results</h1>
+    <h1 class="h3 text-main mb-4"><strong>Search Results</strong></h1>
 
     @if (isLoading)
     {
         <div class="d-flex justify-content-center align-items-center py-5">
-            <div class="spinner-border text-warning" role="status">
+            <div class="spinner-border text-main" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
-            <span class="ms-3 h5 text-warning">Loading...</span>
+            <span class="ms-3 h5 text-main">Loading...</span>
         </div>
     }
     else if (hasError)
@@ -29,36 +29,74 @@
     {
         <!-- Gene Search Results Section -->
         <section class="mb-5">
-            <h2 class="h4 text-warning mb-3">Gene search result</h2>
+            <h2 class="h5 text-main mb-3">Gene search result</h2>
             @if (geneResults != null && geneResults.Any())
             {
-                <div class="card">
-                    <div class="card-body">
-                        @foreach (var gene in geneResults)
-                        {
-                            <div class="mb-3">
-                                <button type="button" @onclick="() => NavigateToGenePage(gene.Name)" 
-                                        class="btn btn-link text-dark text-decoration-underline p-0 fw-bold">
-                                    @gene.Name
-                                </button>
-                                @if (geneTranscripts.ContainsKey(gene.Name) && geneTranscripts[gene.Name].Any())
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Gene</th>
+                                <th>Transcript</th>
+                                <th class="badge-col">InHouse</th>
+                                <th class="badge-col">Select</th>
+                                <th class="badge-col">Clinical</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var gene in geneResults)
+                            {
+                                if (geneTranscripts.ContainsKey(gene.Name) && geneTranscripts[gene.Name].Any())
                                 {
-                                    <span class="ms-3">
-                                        @foreach (var transcript in geneTranscripts[gene.Name])
-                                        {
-                                            <button type="button" @onclick="() => NavigateToGenePage(gene.Name, transcript.NmNumber)" 
-                                                    class="btn btn-link text-dark text-decoration-underline p-0 me-2">
-                                                @transcript.NmNumber
-                                                @if (transcript.IsInHouse) { <span class="badge bg-success">InHouse</span> }
-                                                @if (transcript.IsSelect) { <span class="badge bg-primary">Select</span> }
-                                                @if (transcript.IsClinical) { <span class="badge bg-secondary">Clinical</span> }
-                                            </button>
-                                        }
-                                    </span>
+                                    foreach (var transcript in geneTranscripts[gene.Name])
+                                    {
+                                        <tr>
+                                            <td>
+                                                <button type="button" @onclick="() => NavigateToGenePage(gene.Name)"
+                                                        class="btn btn-link text-dark text-decoration-underline p-0 fw-bold">
+                                                    @gene.Name
+                                                </button>
+                                            </td>
+                                            <td>
+                                                <button type="button" @onclick="() => NavigateToGenePage(gene.Name, transcript.NmNumber)"
+                                                        class="btn btn-link text-dark text-decoration-underline p-0">
+                                                    @transcript.NmNumber
+                                                </button>
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                <span class="@(transcript.IsInHouse ? "bg-true" : "bg-false") rounded-badge">
+                                                    @(transcript.IsInHouse ? "✓" : "✖")
+                                                </span>
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                <span class="@(transcript.IsSelect ? "bg-true" : "bg-false") rounded-badge">
+                                                    @(transcript.IsSelect ? "✓" : "✖")
+                                                </span>
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                <span class="@(transcript.IsClinical ? "bg-true" : "bg-false") rounded-badge">
+                                                    @(transcript.IsClinical ? "✓" : "✖")
+                                                </span>
+                                            </td>
+
+                                        </tr>
+                                    }
                                 }
-                            </div>
-                        }
-                    </div>
+                                else
+                                {
+                                    <tr>
+                                        <td>
+                                            <button type="button" @onclick="() => NavigateToGenePage(gene.Name)"
+                                                    class="btn btn-link text-dark text-decoration-underline p-0 fw-bold">
+                                                @gene.Name
+                                            </button>
+                                        </td>
+                                        <td colspan="4" class="text-muted">No transcripts</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
                 </div>
             }
             else
@@ -69,21 +107,51 @@
 
         <!-- Variants Section -->
         <section class="mb-5">
-            <h2 class="h4 text-warning mb-3">Variants</h2>
+            <h2 class="h5 text-main mb-3">Variants</h2>
             @if (variantResults != null && variantResults.Any())
             {
-                <div class="card">
-                    <div class="card-body">
-                        @foreach (var variant in variantResults)
-                        {
-                            <div class="mb-2">
-                                <button type="button" @onclick="() => NavigateToPositionPage(variant.VariantId)" 
-                                        class="btn btn-link text-dark text-decoration-underline p-0">
-                                    @variant.Chromosome - @variant.Position - @variant.Reference - @variant.Alternative
-                                </button>
-                            </div>
-                        }
-                    </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Chromosome</th>
+                                <th>Position</th>
+                                <th>Reference</th>
+                                <th>Alternative</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var variant in variantResults)
+                            {
+                                <tr>
+                                    <td>
+                                        <button type="button" @onclick="() => NavigateToPositionPage(variant.VariantId)"
+                                                class="btn btn-link text-dark text-decoration-underline p-0">
+                                            @variant.Chromosome
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button type="button" @onclick="() => NavigateToPositionPage(variant.VariantId)"
+                                                class="btn btn-link text-dark text-decoration-underline p-0">
+                                            @variant.Position
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button type="button" @onclick="() => NavigateToPositionPage(variant.VariantId)"
+                                                class="btn btn-link text-dark text-decoration-underline p-0">
+                                            @variant.Reference
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button type="button" @onclick="() => NavigateToPositionPage(variant.VariantId)"
+                                                class="btn btn-link text-dark text-decoration-underline p-0">
+                                            @variant.Alternative
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
                 </div>
             }
             else
@@ -91,12 +159,13 @@
                 <div class="text-muted">No variants found</div>
             }
         </section>
+
     }
 
     <!-- Add New Gene Button -->
     <div class="mt-4">
         <button type="button" @onclick="NavigateToAddGene" 
-                class="btn btn-danger fw-bold">
+                class="btn btn-main fw-bold">
             Add New Gene
         </button>
     </div>
@@ -204,7 +273,17 @@
             {
                 geneResults = fullGenes;
                 // Add the transcript we found to the transcripts dictionary
-                geneTranscripts[transcript.Gene.Name] = new List<NmTranscript> { transcript };
+                geneTranscripts[transcript.Gene.Name] = new List<NmTranscript>
+                {
+                new NmTranscript
+                {
+                   NmNumber = transcript.NmNumber,
+				   GeneId = transcript.GeneId,
+				   IsSelect = transcript.IsSelect,
+				   IsInHouse = transcript.IsInHouse,
+				   IsClinical = transcript.IsClinical
+                }
+                };
                 LoadVariantsFromGenes();
             }
         }

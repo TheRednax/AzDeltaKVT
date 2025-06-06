@@ -16,39 +16,47 @@ namespace AzDeltaKVT.API.Controllers
             _transcriptService = transcriptService;
         }
 
-        // GET /transcripts/{nmNumber}
-        [HttpGet("{nmNumber}")]
-        public async Task<IActionResult> GetTranscript(string nmNumber)
+        // GET /transcripts
+        [HttpGet]
+        public async Task<IActionResult> Find()
         {
-            var transcript = await _transcriptService.GetByIdAsync(nmNumber);
+            var results = await _transcriptService.Find();
+            return Ok(results);
+        }
+
+        // POST /transcripts/get
+        [HttpPost("get")]
+        public async Task<IActionResult> Get([FromBody] NmTranscript request)
+        {
+            var transcript = await _transcriptService.Get(request.NmNumber);
             if (transcript == null)
                 return NotFound();
+
             return Ok(transcript);
         }
 
-        // PUT /transcripts/{nmNumber}
-        [HttpPut("{nmNumber}")]
-        public async Task<IActionResult> UpdateTranscript(string nmNumber, [FromBody] NmTranscript transcript)
+        // POST /transcripts/create
+        [HttpPost("create")]
+        public async Task<IActionResult> Create([FromBody] NmTranscript transcript)
         {
-            if (nmNumber != transcript.NmNumber)
-                return BadRequest("NmNumber mismatch");
-
-            var updated = await _transcriptService.UpdateAsync(nmNumber, transcript);
-            if (!updated)
-                return NotFound();
-
-            return NoContent();
+            var created = await _transcriptService.Create(transcript);
+            return Ok(created);
         }
 
-        // DELETE /transcripts/{nmNumber}
-        [HttpDelete("{nmNumber}")]
-        public async Task<IActionResult> DeleteTranscript(string nmNumber)
+        // PUT /transcripts/update
+        [HttpPut("update")]
+        public async Task<IActionResult> Update([FromBody] NmTranscript transcript)
         {
-            var deleted = await _transcriptService.DeleteAsync(nmNumber);
-            if (!deleted)
-                return NotFound();
+            var updated = await _transcriptService.Update(transcript);
+            return Ok(updated);
+        }
 
-            return NoContent();
+        // DELETE /transcripts/delete
+        [HttpDelete("delete")]
+        public async Task<IActionResult> Delete([FromBody] NmTranscript transcript)
+        {
+            var deleted = await _transcriptService.Delete(transcript.NmNumber);
+            return Ok(deleted);
         }
     }
 }
