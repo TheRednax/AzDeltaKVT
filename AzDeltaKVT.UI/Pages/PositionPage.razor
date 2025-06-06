@@ -1,0 +1,377 @@
+﻿@page "/position"
+@page "/position/{geneId}/{chromosome}/{position}"
+@using AzDeltaKVT.UI.Services
+@using AzDeltaKVT.Dto.Results
+@inject ApiService ApiService
+@inject IJSRuntime JSRuntime
+
+<div class="container mt-4">
+    <h2 class="text-accent fw-bold mb-4">Position Page</h2>
+
+    <h2 class="text-accent fw-bold mb-4">Position Page</h2>
+
+    @if (IsLoading)
+    {
+        <div class="d-flex justify-content-center p-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <span class="ms-3">Loading position data...</span>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            @ErrorMessage
+        </div>
+    }
+    else
+    {
+        <!-- Position Information Section -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-body">
+                <h4 class="text-accent fw-bold mb-3">Position Information</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><span class="fw-bold text-accent">Gene Name:</span> @GeneName</p>
+                        <p><span class="fw-bold text-accent">Chromosome:</span> @Chromosome</p>
+                        <p><span class="fw-bold text-accent">Position:</span> @Position</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><span class="fw-bold text-accent">Reference:</span> @Reference</p>
+                        <p><span class="fw-bold text-accent">Alternative:</span> @Alternative</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NM Transcripts Section -->
+        <h4 class="text-accent fw-bold mb-3">Associated NM Transcripts</h4>
+
+        @if (SortedGeneDetails.Any())
+        {
+            @foreach (var item in SortedGeneDetails.Select((value, index) => new { value, index }))
+            {
+                <div class="card mb-3 shadow-sm border-start border-4 @GetPriorityBorderClass(item.value)">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h5 class="text-accent fw-bold mb-3">
+                                    @(item.index + 1)) NM_NUMBER: <span class="text-secondary">@item.value.NmNumber</span>
+                                    <span class="ms-2">@((MarkupString)GetPriorityBadge(item.value))</span>
+                                </h5>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <ul class="list-unstyled">
+                                            <li class="mb-1">
+                                                <span class="text-accent fw-bold">Is_Select:</span>
+                                                <span class="badge @(item.value.IsSelect == "Yes" ? "bg-success" : "bg-secondary")">
+                                                    @item.value.IsSelect
+                                                </span>
+                                            </li>
+                                            <li class="mb-1">
+                                                <span class="text-accent fw-bold">Is_Clinical:</span>
+                                                <span class="badge @(item.value.IsClinical == "Yes" ? "bg-info" : "bg-secondary")">
+                                                    @item.value.IsClinical
+                                                </span>
+                                            </li>
+                                            <li class="mb-1">
+                                                <span class="text-accent fw-bold">Is_InHouse:</span>
+                                                <span class="badge @(item.value.IsInHouse == "Yes" ? "bg-primary" : "bg-secondary")">
+                                                    @item.value.IsInHouse
+                                                </span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <ul class="list-unstyled">
+                                            <li class="mb-1">
+                                                <span class="text-accent fw-bold">Biological Effect:</span>
+                                                <span class="text-secondary">@(string.IsNullOrEmpty(item.value.BiologicalEffect) ? "N/A" : item.value.BiologicalEffect)</span>
+                                            </li>
+                                            <li class="mb-1">
+                                                <span class="text-accent fw-bold">Classification:</span>
+                                                @if (!string.IsNullOrEmpty(item.value.Classification))
+                                                {
+                                                    <span class="badge @GetClassificationBadgeClass(item.value.Classification)">
+                                                        @item.value.Classification
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">N/A</span>
+                                                }
+                                            </li>
+                                            <li class="mb-1">
+                                                <span class="text-accent fw-bold">User_Info:</span>
+                                                <span class="text-secondary">@(string.IsNullOrEmpty(item.value.UserInfo) ? "N/A" : item.value.UserInfo)</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ms-3">
+                                <button class="btn btn-outline-primary fw-bold px-4" @onclick="() => EditItem(item.value)">
+                                    <i class="bi bi-pencil-square me-2"></i>Edit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                No NM transcripts found for this position.
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public string? GeneId { get; set; }
+    [Parameter] public string? Chromosome { get; set; }
+    [Parameter] public string? Position { get; set; }
+
+    // Position data - loaded from API
+    private string GeneName = "";
+    private string Reference = "";
+    private string Alternative = "";
+    private bool IsLoading = true;
+    private string ErrorMessage = "";
+
+    private List<GeneDetail> GeneDetails = new();
+
+    // Sorted list according to specifications:
+    // 1. InHouse first, 2. Select second, 3. Clinical third, 4. Alphabetical within groups
+    private List<GeneDetail> SortedGeneDetails =>
+        GeneDetails
+            .OrderBy(x => GetSortPriority(x))
+            .ThenBy(x => x.NmNumber)
+            .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPositionData();
+    }
+
+    private async Task LoadPositionData()
+    {
+        try
+        {
+            IsLoading = true;
+            ErrorMessage = "";
+
+            // Load based on parameters or use default search
+            if (!string.IsNullOrEmpty(GeneId))
+            {
+                GeneName = GeneId;
+
+                // Get gene information
+                var gene = await ApiService.GetGeneByNameAsync(GeneId);
+                if (gene != null)
+                {
+                    GeneName = gene.Name;
+
+                    // Get transcripts from the gene
+                    var transcripts = ApiService.GetTranscriptsFromGene(gene);
+
+                    // Convert to our display model
+                    GeneDetails = transcripts.Select(t => new GeneDetail
+                        {
+                            NmNumber = t.NmNumber ?? "",
+                            IsSelect = t.IsSelect ? "Yes" : "No",
+                            IsClinical = t.IsClinical ? "Yes" : "No",
+                            IsInHouse = t.IsInHouse ? "Yes" : "No",
+                            BiologicalEffect = "", // Will be filled from gene variants
+                            Classification = "",   // Will be filled from gene variants
+                            UserInfo = t.UserInfo ?? ""
+                        }).ToList();
+
+                    // Get variants for this gene
+                    var variants = await ApiService.GetVariantsInGeneRangeAsync(gene);
+
+                    // If we have position/chromosome parameters, filter variants
+                    if (!string.IsNullOrEmpty(Chromosome) && !string.IsNullOrEmpty(Position))
+                    {
+                        if (int.TryParse(Position, out int pos))
+                        {
+                            this.Chromosome = Chromosome;
+                            this.Position = Position;
+
+                            var filteredVariants = variants.Where(v =>
+                                v.Chromosome == Chromosome && v.Position == pos).ToList();
+
+                            if (filteredVariants.Any())
+                            {
+                                var selectedVariant = filteredVariants.First();
+                                Reference = selectedVariant.Reference ?? "";
+                                Alternative = selectedVariant.Alternative ?? "";
+                            }
+
+                            variants = filteredVariants;
+                        }
+                    }
+                    else if (variants.Any())
+                    {
+                        // Use first variant for position info if no parameters
+                        var firstVariant = variants.First();
+                        this.Chromosome = firstVariant.Chromosome ?? "";
+                        this.Position = firstVariant.Position.ToString();
+                        Reference = firstVariant.Reference ?? "";
+                        Alternative = firstVariant.Alternative ?? "";
+                    }
+
+                    // Get gene variants to populate biological effect and classification
+                    if (variants.Any())
+                    {
+                        var geneVariants = await ApiService.GetGeneVariantsForVariantsAsync(variants);
+
+                        // Update GeneDetails with gene variant information
+                        foreach (var geneDetail in GeneDetails)
+                        {
+                            var matchingGeneVariant = geneVariants.FirstOrDefault(gv =>
+                                gv.NmTranscript?.NmNumber == geneDetail.NmNumber);
+
+                            if (matchingGeneVariant != null)
+                            {
+                                geneDetail.BiologicalEffect = matchingGeneVariant.BiologicalEffect ?? "";
+                                geneDetail.Classification = matchingGeneVariant.Classification ?? "";
+                                if (!string.IsNullOrEmpty(matchingGeneVariant.UserInfo))
+                                {
+                                    geneDetail.UserInfo = matchingGeneVariant.UserInfo;
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    ErrorMessage = $"Gene '{GeneId}' not found.";
+                }
+            }
+            else
+            {
+                // No gene specified, try to load from search parameters
+                if (!string.IsNullOrEmpty(Chromosome) && !string.IsNullOrEmpty(Position))
+                {
+                    if (int.TryParse(Position, out int pos))
+                    {
+                        var variants = await ApiService.SearchVariantsAsync(Chromosome, pos);
+                        if (variants.Any())
+                        {
+                            var variant = variants.First();
+                            this.Chromosome = variant.Chromosome ?? "";
+                            this.Position = variant.Position.ToString();
+                            Reference = variant.Reference ?? "";
+                            Alternative = variant.Alternative ?? "";
+
+                            // Try to find associated gene
+                            var allGenes = await ApiService.GetAllGenesAsync();
+                            var associatedGene = allGenes.FirstOrDefault(g =>
+                                g.Chromosome == Chromosome &&
+                                variant.Position >= g.Start &&
+                                variant.Position <= g.Stop);
+
+                            if (associatedGene != null)
+                            {
+                                GeneName = associatedGene.Name;
+                                // Load transcript data...
+                            }
+                        }
+                        else
+                        {
+                            ErrorMessage = $"No variants found at {Chromosome}:{Position}";
+                        }
+                    }
+                }
+                else
+                {
+                    ErrorMessage = "Please provide either a gene name or chromosome and position.";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error loading position data: {ex.Message}";
+            Console.WriteLine($"LoadPositionData error: {ex}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private int GetSortPriority(GeneDetail detail)
+    {
+        // Priority 1: InHouse = Yes
+        if (detail.IsInHouse == "Yes") return 1;
+
+        // Priority 2: Select = Yes
+        if (detail.IsSelect == "Yes") return 2;
+
+        // Priority 3: Clinical = Yes
+        if (detail.IsClinical == "Yes") return 3;
+
+        // Priority 4: Others
+        return 4;
+    }
+
+    private string GetPriorityBorderClass(GeneDetail detail)
+    {
+        return GetSortPriority(detail) switch
+        {
+            1 => "border-primary",   // InHouse
+            2 => "border-success",   // Select
+            3 => "border-info",      // Clinical
+            _ => "border-secondary"  // Others
+        };
+    }
+
+    private string GetPriorityBadge(GeneDetail detail)
+    {
+        return GetSortPriority(detail) switch
+        {
+            1 => "<span class=\"badge bg-primary ms-1\">InHouse</span>",
+            2 => "<span class=\"badge bg-success ms-1\">Select</span>",
+            3 => "<span class=\"badge bg-info ms-1\">Clinical</span>",
+            _ => ""
+        };
+    }
+
+    private string GetClassificationBadgeClass(string classification)
+    {
+        return classification?.ToLower() switch
+        {
+            "pathogenic" => "bg-danger",
+            "likely pathogenic" => "bg-warning text-dark",
+            "benign" => "bg-success",
+            "likely benign" => "bg-light text-dark",
+            "uncertain significance" => "bg-secondary",
+            _ => "bg-secondary"
+        };
+    }
+
+    private async Task EditItem(GeneDetail item)
+    {
+        // TODO: Navigate to edit page or open modal
+        // Navigation.NavigateTo($"/edit-variant/{item.NmNumber}");
+        await JSRuntime.InvokeVoidAsync("console.log", $"Edit clicked for: {item.NmNumber}");
+    }
+
+    public class GeneDetail
+    {
+        public string NmNumber { get; set; } = "";
+        public string IsSelect { get; set; } = "";
+        public string IsClinical { get; set; } = "";
+        public string IsInHouse { get; set; } = "";
+        public string BiologicalEffect { get; set; } = "";
+        public string Classification { get; set; } = "";
+        public string UserInfo { get; set; } = "";
+    }
+}
