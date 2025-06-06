@@ -2,6 +2,36 @@
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="container py-5">
+    <section class="mb-5">
+        <h2 class="h3 text-warning mb-3">Search</h2>
+        <div class="mb-2">
+            <label class="form-label fw-semibold text-warning">Gene:</label>
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Enter gene here" />
+                <button class="btn btn-outline-warning fw-bold" type="button">Search</button>
+            </div>
+        </div>
+    </section>
 
-Welcome to your new app.
+    <section class="mb-5">
+        <h2 class="h3 text-warning mb-3">Position</h2>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold text-warning">Shr:</label>
+                <input type="text" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold text-warning">Posi:</label>
+                <input type="text" class="form-control" />
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button class="btn btn-outline-warning fw-bold w-100" type="button">Search</button>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <button class="btn btn-outline-warning fw-bold">Upload</button>
+    </section>
+</div>

@@ -27,6 +27,7 @@ builder.Services.AddScoped<GeneService>();
 builder.Services.AddScoped<TranscriptService>();
 builder.Services.AddScoped<VariantService>();
 builder.Services.AddScoped<GeneVariantService>();
+builder.Services.AddScoped<UploadService>();
 
 var app = builder.Build();
 
