@@ -11,10 +11,10 @@
     @if (isLoading)
     {
         <div class="d-flex justify-content-center align-items-center py-5">
-            <div class="spinner-border text-warning" role="status">
+            <div class="spinner-border text-main" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
-            <span class="ms-3 h5 text-warning">Loading...</span>
+            <span class="ms-3 h5 text-main">Loading...</span>
         </div>
     }
     else if (hasError)
@@ -27,109 +27,91 @@
     {
         <!-- Gene Information Section -->
         <section class="mb-5">
-            <h1 class="h2 text-warning mb-4">Gene: @currentGene.Name</h1>
-            
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="h5 mb-0">Gene Information</h3>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p><strong>Gene Name:</strong> @currentGene.Name</p>
-                            <p><strong>Chromosome:</strong> @currentGene.Chromosome</p>
-                        </div>
-                        <div class="col-md-6">
-                            <p><strong>Start Position:</strong> @currentGene.Start</p>
-                            <p><strong>Stop Position:</strong> @currentGene.Stop</p>
-                        </div>
+            <h1 class="h3 text-main mb-4"><strong>Gene page</strong></h1>
+
+            <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+                <h1 class="h5 text-main m-0">Gene details</h1>
+                <button type="button" @onclick="NavigateToEditGene" class="btn btn-main">
+                    Edit Gene
+                </button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <tbody>
+                        <tr>
+                            <td><strong>Gene Name</strong></td>
+                            <td>@currentGene.Name</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Chromosome</strong></td>
+                            <td>@currentGene.Chromosome</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Start Position</strong></td>
+                            <td>@currentGene.Start</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Stop Position</strong></td>
+                            <td>@currentGene.Stop</td>
+                        </tr>
                         @if (!string.IsNullOrEmpty(currentGene.UserInfo))
                         {
-                            <div class="col-12">
-                                <p><strong>Additional Info:</strong> @currentGene.UserInfo</p>
-                            </div>
+                            <tr>
+                                <td><strong>Additional Info</strong></td>
+                                <td>@currentGene.UserInfo</td>
+                            </tr>
                         }
-                    </div>
-                </div>
+                    </tbody>
+                </table>
             </div>
         </section>
 
-        <!-- Transcript Information Section -->
-        @if (currentTranscript != null)
-        {
-            <section class="mb-5">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="h5 mb-0">NM Transcript Information</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p><strong>NM Number:</strong> @currentTranscript.NmNumber</p>
-                                <p><strong>Gene ID:</strong> @currentTranscript.GeneId</p>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="d-flex flex-wrap gap-2">
-                                    @if (currentTranscript.IsInHouse) { <span class="badge bg-success">InHouse</span> }
-                                    @if (currentTranscript.IsSelect) { <span class="badge bg-primary">Select</span> }
-                                    @if (currentTranscript.IsClinical) { <span class="badge bg-secondary">Clinical</span> }
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        }
 
         <!-- Known Positions Section -->
         <section class="mb-5">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="h5 mb-0">Known Positions for this @(currentTranscript != null ? "Transcript" : "Gene")</h3>
-                    <button type="button" @onclick="NavigateToInsertPosition" 
-                            class="btn btn-success btn-sm">
+                    @if (positions != null && positions.Any())
+                    {
+                <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+                    <h1 class="h5 text-main m-0">Gene positions</h1>
+                    <button type="button" @onclick="NavigateToInsertPosition" class="btn btn-main">
                         Insert Position
                     </button>
                 </div>
-                <div class="card-body">
-                    @if (positions != null && positions.Any())
-                    {
+
                         <div class="table-responsive">
-                            <table class="table table-hover">
+                            <table class="table table-bordered align-middle">
                                 <thead class="table-light">
                                     <tr>
-                                        <th scope="col">Chromosome</th>
-                                        <th scope="col">Position</th>
-                                        <th scope="col">Reference</th>
-                                        <th scope="col">Alternative</th>
+                                        <th>Chromosome</th>
+                                        <th>Position</th>
+                                        <th>Reference</th>
+                                        <th>Alternative</th>
                                         @if (geneVariants.Any())
                                         {
-                                            <th scope="col">Biological Effect</th>
-                                            <th scope="col">Classification</th>
+                                            <th>Biological Effect</th>
+                                            <th>Classification</th>
                                         }
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var position in positions)
                                     {
+                                        var geneVariant = geneVariants.FirstOrDefault(gv => gv.VariantId == position.VariantId);
                                         <tr>
                                             <td>
-                                                <button type="button" @onclick="() => NavigateToPositionPage(position.VariantId)" 
+                                                <button type="button" @onclick="() => NavigateToPositionPage(position.VariantId)"
                                                         class="btn btn-link text-dark text-decoration-underline p-0">
                                                     @position.Chromosome
                                                 </button>
                                             </td>
                                             <td>
-                                                <button type="button" @onclick="() => NavigateToPositionPage(position.VariantId)" 
+                                                <button type="button" @onclick="() => NavigateToPositionPage(position.VariantId)"
                                                         class="btn btn-link text-dark text-decoration-underline p-0">
                                                     @position.Position
                                                 </button>
                                             </td>
                                             <td>@position.Reference</td>
                                             <td>@position.Alternative</td>
-                                            @{
-                                                var geneVariant = geneVariants.FirstOrDefault(gv => gv.VariantId == position.VariantId);
-                                            }
                                             @if (geneVariants.Any())
                                             {
                                                 <td>@(geneVariant?.BiologicalEffect ?? "-")</td>
@@ -147,20 +129,6 @@
                             No known positions found for this @(currentTranscript != null ? "transcript" : "gene").
                         </div>
                     }
-                </div>
-            </div>
-        </section>
-
-        <!-- Action Buttons -->
-        <section class="d-flex gap-3">
-            <button type="button" @onclick="NavigateToEditGene" 
-                    class="btn btn-warning">
-                Edit Gene
-            </button>
-            <button type="button" @onclick="NavigateToInsertPosition" 
-                    class="btn btn-success">
-                Insert Position
-            </button>
         </section>
     }
     else
