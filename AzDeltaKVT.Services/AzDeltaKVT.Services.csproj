@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\AzDektaKVT.Model\AzDektaKVT.Model.csproj" />
     <ProjectReference Include="..\AzDeltaKVT.Core\AzDeltaKVT.Core.csproj" />
+    <ProjectReference Include="..\AzDeltaKVT.Dto\AzDeltaKVT.Dto.csproj" />
   </ItemGroup>
 
 </Project>
