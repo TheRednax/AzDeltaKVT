@@ -86,3 +86,57 @@ code {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+:root {
+    --main-color: #D36732; /* voorbeeldkleur (goud-geel zoals Bootstrap warning) */
+}
+
+.text-main {
+    color: var(--main-color) !important;
+}
+
+.bg-main {
+    background-color: var(--main-color) !important;
+}
+
+.btn-main {
+    color: white !important;
+    background-color: var(--main-color) !important;
+    border: 2px solid var(--main-color) !important;
+}
+
+    .btn-main:hover {
+        background-color: white !important;
+        border: 2px solid var(--main-color) !important;
+        color: var(--main-color) !important;
+    }
+.form-control{
+    border: 2px solid gray !important;
+}
+.rounded-badge {
+    border-radius: 50% !important;
+    padding: 0.5em 0.6em; /* maakt het meer cirkelvormig */
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 2em;
+    height: 2em;
+    text-align: center;
+    line-height: 1;
+    color: white;
+}
+
+
+.bg-true {
+    background-color: #65a565;
+}
+.bg-false {
+    background-color: #e13d3d;
+}
+.badge-col {
+    min-width: 80px;
+    max-width: 80px;
+    width: 1%;
+    white-space: nowrap;
+    text-align: center;
+}

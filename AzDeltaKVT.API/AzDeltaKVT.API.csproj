@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\AzDeltaKVT.Dto\AzDeltaKVT.Dto.csproj" />
     <ProjectReference Include="..\AzDeltaKVT.Services\AzDeltaKVT.Services.csproj" />
   </ItemGroup>
 

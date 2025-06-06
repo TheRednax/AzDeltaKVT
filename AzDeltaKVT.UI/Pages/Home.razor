@@ -1,37 +1,229 @@
 ﻿@page "/"
+@using AzDeltaKVT.UI.Services
+@using AzDeltaKVT.Dto.Results
+@inject ApiService Api
+@inject NavigationManager Navigation
 
 <PageTitle>Home</PageTitle>
 
 <div class="container py-5">
     <section class="mb-5">
-        <h2 class="h3 text-warning mb-3">Search</h2>
-        <div class="mb-2">
-            <label class="form-label fw-semibold text-warning">Gene:</label>
-            <div class="input-group">
-                <input type="text" class="form-control" placeholder="Enter gene here" />
-                <button class="btn btn-outline-warning fw-bold" type="button">Search</button>
+        <h2 class="h3 text-main mb-3"><strong>Search</strong></h2>
+        <div class="row g-3">
+            <div class="col-md-10">
+                <label class="form-label fw-semibold text-main">Gene:</label>
+                <input type="text" @bind="geneSearchTerm" 
+                       @onkeypress="@(async (e) => { if (e.Key == "Enter") await SearchGene(); })"
+                       class="form-control" placeholder="Enter gene here" />
+                @if (!string.IsNullOrEmpty(geneErrorMessage))
+                {
+                    <div class="text-danger small mt-1">@geneErrorMessage</div>
+                }
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button @onclick="SearchGene" class="btn btn-main fw-bold w-100" type="button">Search</button>
             </div>
         </div>
     </section>
 
     <section class="mb-5">
-        <h2 class="h3 text-warning mb-3">Position</h2>
+        <h2 class="h3 text-main mb-3"><strong>Position</strong></h2>
         <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label fw-semibold text-warning">Shr:</label>
-                <input type="text" class="form-control" />
+            <div class="col-md-5">
+                <label class="form-label fw-semibold text-main">Chromosome:</label>
+                <input type="text" @bind="chromosomeSearchTerm" 
+                       @onkeypress="@(async (e) => { if (e.Key == "Enter") await SearchPosition(); })"
+                       class="form-control" placeholder="Enter chromosome here" />
             </div>
-            <div class="col-md-4">
-                <label class="form-label fw-semibold text-warning">Posi:</label>
-                <input type="text" class="form-control" />
+            <div class="col-md-5">
+                <label class="form-label fw-semibold text-main">Position:</label>
+                <input type="text" @bind="positionSearchTerm" 
+                       @onkeypress="@(async (e) => { if (e.Key == "Enter") await SearchPosition(); })"
+                       class="form-control" placeholder="Enter position here" />
+                @if (!string.IsNullOrEmpty(positionErrorMessage))
+                {
+                    <div class="text-danger small mt-1">@positionErrorMessage</div>
+                }
             </div>
-            <div class="col-md-4 d-flex align-items-end">
-                <button class="btn btn-outline-warning fw-bold w-100" type="button">Search</button>
+            <div class="col-md-2 d-flex align-items-end">
+                <button @onclick="SearchPosition" class="btn btn-main fw-bold w-100" type="button">Search</button>
             </div>
         </div>
     </section>
 
     <section>
-        <button class="btn btn-outline-warning fw-bold">Upload</button>
+        <button @onclick="NavigateToUpload" class="btn btn-main fw-bold">Upload</button>
     </section>
+
+    <!-- Debug section - compact version -->
+    @if (isLoading || testResults.Any())
+    {
+        <section class="mt-5">
+            <div class="card">
+                <div class="card-header py-2">
+                    <h6 class="mb-0 text-muted">
+                        API Connection Status @(isLoading ? "(Testing...)" : $"({testResults.Count} checks)")
+                    </h6>
+                </div>
+                @if (isLoading || testResults.Any(r => r.Contains("❌")))
+                {
+                    <div class="card-body py-2">
+                        @if (isLoading)
+                        {
+                            <div class="d-flex align-items-center">
+                                <div class="spinner-border spinner-border-sm text-main me-2" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <small class="text-muted">Testing API endpoints...</small>
+                            </div>
+                        }
+                        
+                        @if (testResults.Any())
+                        {
+                            @foreach (var result in testResults)
+                            {
+                                <div class="small mb-1">@result</div>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+        </section>
+    }
 </div>
+
+@code {
+    private string geneSearchTerm = "";
+    private string chromosomeSearchTerm = "";
+    private string positionSearchTerm = "";
+    
+    private string geneErrorMessage = "";
+    private string positionErrorMessage = "";
+    
+    private bool isLoading = false;
+    private List<string> testResults = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Optional: Test API connection on load
+        await TestApiConnection();
+    }
+
+    private async Task TestApiConnection()
+    {
+        isLoading = true;
+        testResults.Clear();
+        
+        try
+        {
+            // Test GET /genes endpoint
+            var genes = await Api.GetAllGenesAsync();
+            testResults.Add($"✅ Found {genes.Count} genes in database");
+            
+            if (genes.Any())
+            {
+                var firstGene = genes.First();
+                testResults.Add($"✅ Sample gene: {firstGene.Name} (Chr {firstGene.Chromosome})");
+                
+                // Show transcripts info if available
+                if (firstGene.NmNumbers?.Any() == true)
+                {
+                    testResults.Add($"✅ Sample gene has {firstGene.NmNumbers.Count} transcripts");
+                }
+                
+                // Show variants info if available  
+                if (firstGene.Variants?.Any() == true)
+                {
+                    testResults.Add($"✅ Sample gene has {firstGene.Variants.Count} variants");
+                }
+            }
+            
+            // Test POST /genes/get endpoint with a simple search
+            var kitSearch = await Api.SearchGenesAsync(name: "KIT");
+            if (kitSearch.Any())
+            {
+                testResults.Add($"✅ Gene search works - found KIT gene");
+            }
+            else
+            {
+                testResults.Add($"⚠️ Gene search returned no results for KIT");
+            }
+            
+            // Test GET /variants endpoint
+            var variants = await Api.GetAllVariantsAsync();
+            testResults.Add($"✅ Found {variants.Count} total variants");
+        }
+        catch (Exception ex)
+        {
+            testResults.Add($"❌ API Error: {ex.Message}");
+            Console.WriteLine($"TestApiConnection Error: {ex}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SearchGene()
+    {
+        geneErrorMessage = "";
+
+        if (string.IsNullOrWhiteSpace(geneSearchTerm))
+        {
+            geneErrorMessage = "Please enter a gene name or NM number";
+            return;
+        }
+
+        var searchTerm = geneSearchTerm.Trim();
+        
+        // Check if it's an NM number (starts with NM_)
+        if (searchTerm.StartsWith("NM_", StringComparison.OrdinalIgnoreCase))
+        {
+            Navigation.NavigateTo($"/gene-results?nm={Uri.EscapeDataString(searchTerm)}");
+        }
+        else
+        {
+            // Treat as gene name
+            Navigation.NavigateTo($"/gene-results?gene={Uri.EscapeDataString(searchTerm)}");
+        }
+    }
+
+    private async Task SearchPosition()
+    {
+        positionErrorMessage = "";
+
+        if (string.IsNullOrWhiteSpace(chromosomeSearchTerm))
+        {
+            positionErrorMessage = "Please enter a chromosome";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(positionSearchTerm))
+        {
+            positionErrorMessage = "Please enter a position";
+            return;
+        }
+
+        // Validate position is a number
+        if (!int.TryParse(positionSearchTerm.Trim(), out int position))
+        {
+            positionErrorMessage = "Position must be a valid number";
+            return;
+        }
+
+        if (position <= 0)
+        {
+            positionErrorMessage = "Position must be greater than 0";
+            return;
+        }
+
+        var chromosome = chromosomeSearchTerm.Trim();
+        
+        Navigation.NavigateTo($"/gene-results?chrom={Uri.EscapeDataString(chromosome)}&position={position}");
+    }
+
+    private void NavigateToUpload()
+    {
+        Navigation.NavigateTo("/upload");
+    }
+}

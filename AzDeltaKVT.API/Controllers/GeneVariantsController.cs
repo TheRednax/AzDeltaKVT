@@ -1,5 +1,7 @@
-﻿using AzDeltaKVT.Services;
-using AzDektaKVT.Model;
+﻿using AzDektaKVT.Model;
+using AzDeltaKVT.Dto.Requests;
+using AzDeltaKVT.Dto.Results;
+using AzDeltaKVT.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
@@ -18,53 +20,45 @@ namespace AzDeltaKVT.API.Controllers
 
         // GET /genevariants
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> Find()
         {
-            var results = await _geneVariantService.GetAllAsync();
+            var results = await _geneVariantService.Find();
             return Ok(results);
         }
 
-        // GET /genevariants/{nmId}/{variantId}
-        [HttpGet("{nmId}/{variantId}")]
-        public async Task<IActionResult> Get(string nmId, int variantId)
+        // POST /genevariants/get
+        [HttpPost("get")]
+        public async Task<IActionResult> Get([FromBody] GeneVariantRequest request)
         {
-            var geneVariant = await _geneVariantService.GetByIdsAsync(nmId, variantId);
+            var geneVariant = await _geneVariantService.Get(request.NmId, request.VariantId);
             if (geneVariant == null)
                 return NotFound();
+
             return Ok(geneVariant);
         }
 
-        // POST /genevariants
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] GeneVariant geneVariant)
+        // POST /genevariants/create
+        [HttpPost("create")]
+        public async Task<IActionResult> Create([FromBody] GeneVariantRequest request)
         {
-            var created = await _geneVariantService.CreateAsync(geneVariant);
-            return CreatedAtAction(nameof(Get), new { nmId = created.NmId, variantId = created.VariantId }, created);
+            var created = await _geneVariantService.Create(request);
+            return Ok(created);
         }
 
-        // PUT /genevariants/{nmId}/{variantId}
-        [HttpPut("{nmId}/{variantId}")]
-        public async Task<IActionResult> Update(string nmId, int variantId, [FromBody] GeneVariant geneVariant)
+        // PUT /genevariants/update
+        [HttpPut("update")]
+        public async Task<IActionResult> Update([FromBody] GeneVariantRequest request)
         {
-            if (nmId != geneVariant.NmId || variantId != geneVariant.VariantId)
-                return BadRequest("Ids mismatch");
-
-            var updated = await _geneVariantService.UpdateAsync(nmId, variantId, geneVariant);
-            if (!updated)
-                return NotFound();
-
-            return NoContent();
+            var updated = await _geneVariantService.Update(request);
+            return Ok(updated);
         }
 
-        // DELETE /genevariants/{nmId}/{variantId}
-        [HttpDelete("{nmId}/{variantId}")]
-        public async Task<IActionResult> Delete(string nmId, int variantId)
+        // DELETE /genevariants/delete
+        [HttpDelete("delete")]
+        public async Task<IActionResult> Delete([FromBody] GeneVariantRequest request)
         {
-            var deleted = await _geneVariantService.DeleteAsync(nmId, variantId);
-            if (!deleted)
-                return NotFound();
-
-            return NoContent();
+            var deleted = await _geneVariantService.Delete(request);
+            return Ok(deleted);
         }
     }
 }
