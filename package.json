@@ -1,0 +1,12 @@
+{
+  "name": "azdeltakvt",
+  "version": "1.0.0",
+  "description": "https://www.figma.com/design/06Imh9wh8HBFWP798KUXSq/AzDeltaKVT?node-id=0-1&t=jthNqfR45DHanc3X-1  -> crude figma wireframes to understand the assignment better",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
