@@ -1,6 +1,7 @@
 ﻿@page "/gene"
-@using System.Text.Json
-@inject HttpClient Http
+@using AzDeltaKVT.UI.Services
+@using static AzDeltaKVT.UI.Services.ApiService
+@inject ApiService Api
 @inject NavigationManager Navigation
 
 <PageTitle>Gene Details</PageTitle>
@@ -237,16 +238,8 @@
 
     private async Task LoadGene()
     {
-        var response = await Http.GetAsync($"/genes/{Uri.EscapeDataString(Name!)}");
-        if (response.IsSuccessStatusCode)
-        {
-            var json = await response.Content.ReadAsStringAsync();
-            currentGene = JsonSerializer.Deserialize<GeneModel>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-        }
-        else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        currentGene = await Api.GetGeneAsync(Name!);
+        if (currentGene == null)
         {
             hasError = true;
             errorMessage = "Gene not found";
@@ -256,60 +249,18 @@
     private async Task LoadTranscript()
     {
         if (string.IsNullOrEmpty(Nm)) return;
-
-        var response = await Http.GetAsync($"/transcripts/{Uri.EscapeDataString(Nm)}");
-        if (response.IsSuccessStatusCode)
-        {
-            var json = await response.Content.ReadAsStringAsync();
-            currentTranscript = JsonSerializer.Deserialize<TranscriptModel>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-        }
+        currentTranscript = await Api.GetTranscriptAsync(Nm);
     }
 
     private async Task LoadPositions()
     {
         if (currentGene == null) return;
-
-        // Get all variants for this chromosome
-        var response = await Http.GetAsync($"/variants?chrom={Uri.EscapeDataString(currentGene.Chromosome)}");
-        if (response.IsSuccessStatusCode)
-        {
-            var json = await response.Content.ReadAsStringAsync();
-            var allVariants = JsonSerializer.Deserialize<List<VariantModel>>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
-            if (allVariants != null)
-            {
-                // Filter variants that fall within the gene's range
-                positions = allVariants.Where(v => 
-                    v.Chromosome == currentGene.Chromosome && 
-                    v.Position >= currentGene.Start && 
-                    v.Position <= currentGene.Stop).ToList();
-            }
-        }
+        positions = await Api.GetVariantsInGeneRangeAsync(currentGene);
     }
 
     private async Task LoadGeneVariants()
     {
-        var response = await Http.GetAsync("/genevariants");
-        if (response.IsSuccessStatusCode)
-        {
-            var json = await response.Content.ReadAsStringAsync();
-            var allGeneVariants = JsonSerializer.Deserialize<List<GeneVariantModel>>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
-            if (allGeneVariants != null)
-            {
-                geneVariants = allGeneVariants.Where(gv => 
-                    positions.Any(p => p.VariantId == gv.VariantId)).ToList();
-            }
-        }
+        geneVariants = await Api.GetGeneVariantsForVariantsAsync(positions);
     }
 
     private void NavigateToPositionPage(int variantId)
@@ -339,44 +290,5 @@
             url += $"&chromosome={Uri.EscapeDataString(currentGene.Chromosome)}";
         }
         Navigation.NavigateTo(url);
-    }
-
-    // Model classes
-    public class GeneModel
-    {
-        public string Name { get; set; } = "";
-        public string Chromosome { get; set; } = "";
-        public int Start { get; set; }
-        public int Stop { get; set; }
-        public string? UserInfo { get; set; }
-    }
-
-    public class VariantModel
-    {
-        public int VariantId { get; set; }
-        public string Chromosome { get; set; } = "";
-        public int Position { get; set; }
-        public string Reference { get; set; } = "";
-        public string Alternative { get; set; } = "";
-        public string? UserInfo { get; set; }
-    }
-
-    public class TranscriptModel
-    {
-        public string NmNumber { get; set; } = "";
-        public string GeneId { get; set; } = "";
-        public bool IsSelect { get; set; }
-        public bool IsClinical { get; set; }
-        public bool IsInHouse { get; set; }
-        public GeneModel? Gene { get; set; }
-    }
-
-    public class GeneVariantModel
-    {
-        public string NmId { get; set; } = "";
-        public int VariantId { get; set; }
-        public string? BiologicalEffect { get; set; }
-        public string? Classification { get; set; }
-        public string? UserInfo { get; set; }
     }
 }
