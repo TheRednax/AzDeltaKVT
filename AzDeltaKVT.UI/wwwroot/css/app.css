@@ -86,3 +86,30 @@ code {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+:root {
+    --main-color: #D36732; /* voorbeeldkleur (goud-geel zoals Bootstrap warning) */
+}
+
+.text-main {
+    color: var(--main-color) !important;
+}
+
+.bg-main {
+    background-color: var(--main-color) !important;
+}
+
+.btn-main {
+    color: white !important;
+    background-color: var(--main-color) !important;
+    border: 2px solid var(--main-color) !important;
+}
+
+    .btn-main:hover {
+        background-color: white !important;
+        border: 2px solid var(--main-color) !important;
+        color: var(--main-color) !important;
+    }
+.form-control{
+    border: 2px solid gray !important;
+}
