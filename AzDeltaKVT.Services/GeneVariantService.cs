@@ -1,9 +1,9 @@
-﻿using AzDeltaKVT.Core;
-using AzDektaKVT.Model;
-using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using System.Linq;
+using AzDektaKVT.Model;
+using AzDeltaKVT.Core;
+using AzDeltaKVT.Dto.Requests;
+using AzDeltaKVT.Dto.Results;
 
 namespace AzDeltaKVT.Services
 {
@@ -16,49 +16,62 @@ namespace AzDeltaKVT.Services
             _context = context;
         }
 
-        public async Task<IEnumerable<GeneVariant>> GetAllAsync()
+        public IEnumerable<GeneVariant> GetAll()
         {
-            return await _context.GeneVariants
-                .Include(gv => gv.NmTranscript)
-                .Include(gv => gv.Variant)
-                .ToListAsync();
+            return _context.GeneVariants
+                .ToList();
         }
 
-        public async Task<GeneVariant?> GetByIdsAsync(string nmId, int variantId)
+        public GeneVariant? GetByIds(string nmId, int variantId)
         {
-            return await _context.GeneVariants
-                .Include(gv => gv.NmTranscript)
-                .Include(gv => gv.Variant)
-                .FirstOrDefaultAsync(gv => gv.NmId == nmId && gv.VariantId == variantId);
+            return _context.GeneVariants
+                .FirstOrDefault(gv => gv.NmId == nmId && gv.VariantId == variantId);
         }
 
-        public async Task<GeneVariant> CreateAsync(GeneVariant geneVariant)
+        public GeneVariantResult Create(GeneVariantRequest request)
         {
-            _context.GeneVariants.Add(geneVariant);
-            await _context.SaveChangesAsync();
-            return geneVariant;
+            var result = new GeneVariant
+            {
+                NmId = request.NmId,
+                VariantId = request.VariantId,
+                BiologicalEffect = request.BiologicalEffect,
+                Classification = request.Classification,
+                UserInfo = request.UserInfo
+            };
+
+            _context.GeneVariants.Add(result);
+            _context.SaveChanges();
+            return new GeneVariantResult
+            {
+                VariantId = result.VariantId,
+                NmId = result.NmId,
+                NmTranscript = result.NmTranscript,
+                BiologicalEffect = result.BiologicalEffect,
+                Classification = result.Classification,
+                UserInfo = result.UserInfo
+            };
         }
 
-        public async Task<bool> UpdateAsync(string nmId, int variantId, GeneVariant geneVariant)
+        public bool Update(GeneVariantRequest request)
         {
-            var existing = await GetByIdsAsync(nmId, variantId);
+            var existing = GetByIds(request.NmId, request.VariantId);
             if (existing == null) return false;
 
-            existing.BiologicalEffect = geneVariant.BiologicalEffect;
-            existing.Classification = geneVariant.Classification;
-            existing.UserInfo = geneVariant.UserInfo;
+            existing.BiologicalEffect = request.BiologicalEffect;
+            existing.Classification = request.Classification;
+            existing.UserInfo = request.UserInfo;
 
-            await _context.SaveChangesAsync();
+            _context.SaveChanges();
             return true;
         }
 
-        public async Task<bool> DeleteAsync(string nmId, int variantId)
+        public bool Delete(GeneVariantRequest request)
         {
-            var existing = await GetByIdsAsync(nmId, variantId);
+            var existing = GetByIds(request.NmId, request.VariantId);
             if (existing == null) return false;
 
             _context.GeneVariants.Remove(existing);
-            await _context.SaveChangesAsync();
+            _context.SaveChanges();
             return true;
         }
     }
