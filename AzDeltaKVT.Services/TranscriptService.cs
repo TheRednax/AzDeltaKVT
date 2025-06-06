@@ -15,19 +15,32 @@ namespace AzDeltaKVT.Services
             _context = context;
         }
 
-        public async Task<NmTranscript?> GetByIdAsync(string nmNumber)
+        public async Task<IList<NmTranscript>> Find()
+        {
+            return await _context.NmTranscripts
+                .Include(t => t.Gene)
+                .ToListAsync();
+        }
+
+        public async Task<NmTranscript?> Get(string nmNumber)
         {
             return await _context.NmTranscripts
                 .Include(t => t.Gene)
                 .FirstOrDefaultAsync(t => t.NmNumber == nmNumber);
         }
 
-        public async Task<bool> UpdateAsync(string nmNumber, NmTranscript transcript)
+        public async Task<NmTranscript> Create(NmTranscript transcript)
         {
-            var existing = await _context.NmTranscripts.FindAsync(nmNumber);
+            _context.NmTranscripts.Add(transcript);
+            await _context.SaveChangesAsync();
+            return transcript;
+        }
+
+        public async Task<bool> Update(NmTranscript transcript)
+        {
+            var existing = await _context.NmTranscripts.FindAsync(transcript.NmNumber);
             if (existing == null) return false;
 
-            // Update fields except key
             existing.GeneId = transcript.GeneId;
             existing.IsSelect = transcript.IsSelect;
             existing.IsClinical = transcript.IsClinical;
@@ -37,7 +50,7 @@ namespace AzDeltaKVT.Services
             return true;
         }
 
-        public async Task<bool> DeleteAsync(string nmNumber)
+        public async Task<bool> Delete(string nmNumber)
         {
             var transcript = await _context.NmTranscripts.FindAsync(nmNumber);
             if (transcript == null) return false;
