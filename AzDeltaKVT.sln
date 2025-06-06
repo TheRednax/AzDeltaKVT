@@ -15,6 +15,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzDeltaKVT.Services", "AzDe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzDeltaKVT.UI", "AzDeltaKVT.UI\AzDeltaKVT.UI.csproj", "{DE902430-5019-4B6E-B69B-D2CAD607983C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{D576F536-59EE-4948-A59C-6AC6B4B8C200}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzDeltaKVT.Dto", "AzDeltaKVT.Dto\AzDeltaKVT.Dto.csproj", "{4A96AE12-D3A8-44B7-89BB-E70C4B5B7E9E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +45,10 @@ Global
 		{DE902430-5019-4B6E-B69B-D2CAD607983C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE902430-5019-4B6E-B69B-D2CAD607983C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DE902430-5019-4B6E-B69B-D2CAD607983C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A96AE12-D3A8-44B7-89BB-E70C4B5B7E9E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A96AE12-D3A8-44B7-89BB-E70C4B5B7E9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A96AE12-D3A8-44B7-89BB-E70C4B5B7E9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A96AE12-D3A8-44B7-89BB-E70C4B5B7E9E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -48,6 +56,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{0AC45609-CF42-4C82-A16F-B8E1C8EBBD63} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{96394EAA-C8BB-470F-B265-385F143C6285} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{AF0B45D1-8465-4934-9B92-03D408FC7C07} = {D576F536-59EE-4948-A59C-6AC6B4B8C200}
+		{4A96AE12-D3A8-44B7-89BB-E70C4B5B7E9E} = {D576F536-59EE-4948-A59C-6AC6B4B8C200}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9D1D09EE-D48A-423B-BCA5-CF239810F9BE}
