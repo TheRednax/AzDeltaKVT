@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AzDeltaKVT.Dto.Requests;
+using AzDeltaKVT.Services;
+using Microsoft.AspNetCore.Mvc;
 
 namespace AzDeltaKVT.API.Controllers
 {
@@ -6,10 +8,18 @@ namespace AzDeltaKVT.API.Controllers
     [ApiController]
     public class UploadController : ControllerBase
     {
-        [HttpPost]
-        public IActionResult UploadFile(IFormFile file)
+	    private readonly UploadService _UploadService;
+
+	    public UploadController(UploadService uploadService)
+	    {
+            _UploadService = uploadService;
+		}
+
+		[HttpPost]
+        public IActionResult UploadFile(UploadRequest request)
         {
-            return Ok();
+            _UploadService.UploadTsvFile(request);
+			return Ok();
         }
 
         [HttpGet("results")]
