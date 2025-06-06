@@ -1,11 +1,15 @@
 ﻿using AzDektaKVT.Model;
 using AzDeltaKVT.Core;
+using AzDeltaKVT.Dto.Requests;
+using AzDeltaKVT.Dto.Results;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace AzDeltaKVT.Services
 {
@@ -18,35 +22,101 @@ namespace AzDeltaKVT.Services
             _context = context;
         }
 
-        public async Task<IEnumerable<Gene>> GetAllAsync(string? name)
+        public async Task<IList<GeneResult>> Find()
+        {
+            var query = _context.Genes
+                .Select(o => new GeneResult
+                {
+                    Name = o.Name,
+                    Chromosome = o.Chromosome,
+                    Start = o.Start,
+                    Stop = o.Stop,
+                });
+
+            var genes = await query
+                .ToListAsync();
+
+            return genes;
+        }
+
+        public async Task<Gene> Get(GeneRequest request)
         {
             var query = _context.Genes.AsQueryable();
 
-            if (!string.IsNullOrEmpty(name))
+            if (!string.IsNullOrEmpty(request.Name))
             {
-                query = query.Where(g => g.Name.Contains(name));
+                query = query.Where(g => g.Name.Contains(request.Name));
+            }
+            else if (!string.IsNullOrEmpty(request.Nm_Number))
+            {
+                // Lookup the geneId using the NM number
+                var geneId = await _context.NmTranscripts
+                    .Where(t => t.NmNumber == request.Nm_Number)
+                    .Select(t => t.GeneId)
+                    .FirstOrDefaultAsync();
+
+                if (!string.IsNullOrEmpty(geneId))
+                {
+                    query = query.Where(g => g.Name == geneId);
+                }
+                else
+                {
+                    return new GeneResult(); // or return null / NotFound
+                }
+            }
+            else if (!string.IsNullOrEmpty(request.Chromosome) && request.Position.HasValue)
+            {
+                query = query.Where(g =>
+                    g.Chromosome == request.Chromosome &&
+                    g.Start <= request.Position &&
+                    g.Stop >= request.Position);
+            }
+            else
+            {
+                return new GeneResult(); // No valid filter applied
             }
 
-            return await query.ToListAsync();
+            var result = await query
+                .Select(g => new GeneResult
+                {
+                    Name = g.Name,
+                    Chromosome = g.Chromosome,
+                    Start = g.Start,
+                    Stop = g.Stop,
+                    UserInfo = g.UserInfo
+                })
+                .FirstOrDefaultAsync();
+
+            return result ?? new GeneResult(); // fallback
         }
 
-        public async Task<Gene?> GetByIdAsync(string name)
+        public async Task<GeneResult> Create(GeneRequest request)
         {
-            return await _context.Genes
-                .FirstOrDefaultAsync(g => g.Name == name);
-        }
+            var result = new Gene
+            {
+                Name = request.Name,
+                Chromosome = request.Chromosome,
+                Start = request.Start,
+                Stop = request.Stop,
+                UserInfo = request.UserInfo
+            };
 
-        public async Task<Gene> CreateAsync(Gene gene)
-        {
-            _context.Genes.Add(gene);
+            _context.Genes.Add(result);
             await _context.SaveChangesAsync();
-            return gene;
+            return new GeneResult
+            {
+                Name = result.Name,
+                Chromosome = result.Chromosome,
+                Start = result.Start,
+                Stop = result.Stop,
+                UserInfo = result.UserInfo
+            }; ;
         }
 
-        public async Task<bool> UpdateAsync(string name, Gene gene)
+        public async Task<GeneResult> Update(GeneRequest gene)
         {
-            var existing = await _context.Genes.FindAsync(name);
-            if (existing == null) return false;
+            var existing = await _context.Genes.FindAsync(gene.Name);
+            if (existing == null) return null;
 
             existing.Chromosome = gene.Chromosome;
             existing.Start = gene.Start;
@@ -54,10 +124,18 @@ namespace AzDeltaKVT.Services
             existing.UserInfo = gene.UserInfo;
 
             await _context.SaveChangesAsync();
-            return true;
+
+            return new GeneResult
+            {
+                Name = existing.Name,
+                Chromosome = existing.Chromosome,
+                Start = existing.Start,
+                Stop = existing.Stop,
+                UserInfo = existing.UserInfo
+            };
         }
 
-        public async Task<bool> DeleteAsync(string name)
+        public async Task<bool> Delete(string name)
         {
             var gene = await _context.Genes.FindAsync(name);
             if (gene == null)
