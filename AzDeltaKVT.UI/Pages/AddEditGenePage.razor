@@ -224,18 +224,21 @@
         isSaving = true;
         errorMessage = "";
 
-        try
-        {
-            var request = new GeneRequest
-            {
-                Name = geneName,
-                Chromosome = chromosome,
-                Start = start,
-                Stop = stop,
-                UserInfo = userInfo,
-                Nm_Number = nmNumber,
-                Position = null
-            };
+		try
+		{
+			var request = new GeneRequest
+				{
+					Name = geneName,
+					Chromosome = chromosome,
+					Start = start,
+					Stop = stop,
+					UserInfo = userInfo,
+					Nm_Number = nmNumber,
+					Position = null,
+					IsClinical = isClinical,
+					IsInHouse = isInHouse,
+					IsSelect = isSelect
+				};
 
             if (IsEditMode)
             {
