@@ -342,7 +342,22 @@
 
     private void NavigateToPositionPage(int variantId)
     {
-        Navigation.NavigateTo($"/position?id={variantId}");
+        Console.WriteLine($"NavigateToPositionPage called with variantId: {variantId}");
+
+        var variant = variantResults?.FirstOrDefault(v => v.VariantId == variantId);
+
+        Console.WriteLine($"Found variant: {variant?.Chromosome}:{variant?.Position} (Ref: {variant?.Reference}, Alt: {variant?.Alternative})");
+
+        if (variant != null && variant.Position.HasValue)
+        {
+            var url = $"/position/{Uri.EscapeDataString(variant.Chromosome!)}/{variant.Position}";
+            Console.WriteLine($"Navigating to: {url}");
+            Navigation.NavigateTo(url);
+        }
+        else
+        {
+            Console.WriteLine("Variant not found or invalid position");
+        }
     }
 
     private void NavigateToAddGene()

@@ -1,158 +1,165 @@
 ﻿@page "/position"
-@page "/position/{geneId}"
-@page "/position/{geneId}/{chromosome}"
-@page "/position/{geneId}/{chromosome}/{position}"
+@page "/position/{chromosome}/{position}"
 @using AzDeltaKVT.UI.Services
 @using AzDeltaKVT.Dto.Results
+@using AzDektaKVT.Model
 @inject ApiService ApiService
-@inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
 
-<div class="container mt-4">
-    <h2 class="text-accent fw-bold mb-4">Position Page</h2>
+<div class="container py-4">
+    <h1 class="h3 text-main mb-4"><strong>Position Page</strong></h1>
 
     @if (IsLoading)
     {
-        <div class="d-flex justify-content-center p-5">
-            <div class="spinner-border text-primary" role="status">
+        <div class="d-flex justify-content-center align-items-center py-5">
+            <div class="spinner-border text-main" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
-            <span class="ms-3">Loading position data...</span>
+            <span class="ms-3 h5 text-main">Loading...</span>
         </div>
     }
     else if (!string.IsNullOrEmpty(ErrorMessage))
     {
         <div class="alert alert-danger">
-            <i class="bi bi-exclamation-triangle me-2"></i>
-            @ErrorMessage
+            <strong>Error:</strong> @ErrorMessage
         </div>
     }
     else
     {
         <!-- Position Information Section -->
-        <div class="card mb-4 shadow-sm">
-            <div class="card-body">
-                <h4 class="text-accent fw-bold mb-3">Position Information</h4>
-                <div class="row">
-                    <div class="col-md-6">
-                        <p><span class="fw-bold text-accent">Gene Name:</span> @GeneName</p>
-                        <p><span class="fw-bold text-accent">Chromosome:</span> @Chromosome</p>
-                        <p><span class="fw-bold text-accent">Position:</span> @Position</p>
-                    </div>
-                    <div class="col-md-6">
-                        <p><span class="fw-bold text-accent">Reference:</span> @Reference</p>
-                        <p><span class="fw-bold text-accent">Alternative:</span> @Alternative</p>
-                    </div>
-                </div>
+        <section class="mb-5">
+            <h2 class="h5 text-main mb-3">Position Information</h2>
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <tbody>
+                        <tr>
+                            <td><strong>Gene Name</strong></td>
+                            <td>@GeneName</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Chromosome</strong></td>
+                            <td>@Chromosome</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Position</strong></td>
+                            <td>@Position</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Reference</strong></td>
+                            <td>@Reference</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Alternative</strong></td>
+                            <td>@Alternative</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-        </div>
+        </section>
 
         <!-- NM Transcripts Section -->
-        <h4 class="text-accent fw-bold mb-3">Associated NM Transcripts</h4>
+        <section class="mb-5">
+            <h2 class="h5 text-main mb-3">Associated NM Transcripts</h2>
 
-        @if (SortedTranscripts.Any())
-        {
-            @foreach (var item in SortedTranscripts.Select((value, index) => new { value, index }))
+            @if (SortedTranscripts.Any())
             {
-                <div class="card mb-3 shadow-sm border-start border-4 @GetPriorityBorderClass(item.value)">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="flex-grow-1">
-                                <h5 class="text-accent fw-bold mb-3">
-                                    @(item.index + 1)) NM_NUMBER: <span class="text-secondary">@item.value.NmNumber</span>
-                                    <span class="ms-2">@((MarkupString)GetPriorityBadge(item.value))</span>
-                                </h5>
+                @foreach (var transcript in SortedTranscripts)
+                {
+                    var geneVariant = GetGeneVariantForTranscript(transcript.NmNumber);
 
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <ul class="list-unstyled">
-                                            <li class="mb-1">
-                                                <span class="text-accent fw-bold">Is_Select:</span>
-                                                <span class="badge @(item.value.IsSelect ? "bg-success" : "bg-secondary")">
-                                                    @(item.value.IsSelect ? "Yes" : "No")
-                                                </span>
-                                            </li>
-                                            <li class="mb-1">
-                                                <span class="text-accent fw-bold">Is_Clinical:</span>
-                                                <span class="badge @(item.value.IsClinical ? "bg-info" : "bg-secondary")">
-                                                    @(item.value.IsClinical ? "Yes" : "No")
-                                                </span>
-                                            </li>
-                                            <li class="mb-1">
-                                                <span class="text-accent fw-bold">Is_InHouse:</span>
-                                                <span class="badge @(item.value.IsInHouse ? "bg-primary" : "bg-secondary")">
-                                                    @(item.value.IsInHouse ? "Yes" : "No")
-                                                </span>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                    <div class="col-md-6">
-                                        @{
-                                            var geneVariant = GetGeneVariantForTranscript(item.value.NmNumber);
-                                        }
-                                        <ul class="list-unstyled">
-                                            <li class="mb-1">
-                                                <span class="text-accent fw-bold">Biological Effect:</span>
-                                                <span class="text-secondary">@(string.IsNullOrEmpty(geneVariant?.BiologicalEffect) ? "N/A" : geneVariant.BiologicalEffect)</span>
-                                            </li>
-                                            <li class="mb-1">
-                                                <span class="text-accent fw-bold">Classification:</span>
-                                                @if (!string.IsNullOrEmpty(geneVariant?.Classification))
-                                                {
-                                                    <span class="badge @GetClassificationBadgeClass(geneVariant.Classification)">
-                                                        @geneVariant.Classification
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h5 class="text-main fw-bold mb-3">
+                                        NM_NUMBER: @transcript.NmNumber
+                                        <span class="ms-2">@((MarkupString)GetPriorityBadge(transcript))</span>
+                                    </h5>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <ul class="list-unstyled">
+                                                <li class="mb-2">
+                                                    <strong>IS_SELECT:</strong>
+                                                    <span class="badge @(transcript.IsSelect ? "bg-success" : "bg-secondary")">
+                                                        @(transcript.IsSelect ? "Yes" : "No")
                                                     </span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="text-muted">N/A</span>
-                                                }
-                                            </li>
-                                            <li class="mb-1">
-                                                <span class="text-accent fw-bold">User_Info:</span>
-                                                <span class="text-secondary">@(string.IsNullOrEmpty(geneVariant?.UserInfo) ? "N/A" : geneVariant.UserInfo)</span>
-                                            </li>
-                                        </ul>
+                                                </li>
+                                                <li class="mb-2">
+                                                    <strong>IS_CLINICAL:</strong>
+                                                    <span class="badge @(transcript.IsClinical ? "bg-info" : "bg-secondary")">
+                                                        @(transcript.IsClinical ? "Yes" : "No")
+                                                    </span>
+                                                </li>
+                                                <li class="mb-2">
+                                                    <strong>IS_INHOUSE:</strong>
+                                                    <span class="badge @(transcript.IsInHouse ? "bg-primary" : "bg-secondary")">
+                                                        @(transcript.IsInHouse ? "Yes" : "No")
+                                                    </span>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <ul class="list-unstyled">
+                                                <li class="mb-2">
+                                                    <strong>BIOLOGICAL_EFFECT:</strong>
+                                                    <span class="text-muted">@(geneVariant?.BiologicalEffect ?? "N/A")</span>
+                                                </li>
+                                                <li class="mb-2">
+                                                    <strong>CLASSIFICATION:</strong>
+                                                    @if (!string.IsNullOrEmpty(geneVariant?.Classification))
+                                                    {
+                                                        <span class="badge @GetClassificationBadgeClass(geneVariant.Classification)">
+                                                            @geneVariant.Classification
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">N/A</span>
+                                                    }
+                                                </li>
+                                                <li class="mb-2">
+                                                    <strong>USER_INFO:</strong>
+                                                    <span class="text-muted">@(geneVariant?.UserInfo ?? "N/A")</span>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div class="ms-3">
-                                <button class="btn btn-outline-primary fw-bold px-4" @onclick="() => EditItem(item.value)">
-                                    <i class="bi bi-pencil-square me-2"></i>Edit
-                                </button>
+                                <div class="ms-3">
+                                    <button type="button" @onclick="() => EditTranscript(transcript)"
+                                            class="btn btn-main fw-bold">
+                                        EDIT
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                }
             }
-        }
-        else
-        {
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle me-2"></i>
-                No NM transcripts found for this position.
-            </div>
-        }
+            else
+            {
+                <div class="text-muted">No NM transcripts found for this position.</div>
+            }
+        </section>
     }
 </div>
 
 @code {
-    [Parameter] public string? GeneId { get; set; }
     [Parameter] public string? Chromosome { get; set; }
     [Parameter] public string? Position { get; set; }
+    [Parameter, SupplyParameterFromQuery] public int? Id { get; set; }
 
-    // Position data - loaded from API using existing DTOs
     private string GeneName = "";
     private string Reference = "";
     private string Alternative = "";
     private bool IsLoading = true;
     private string ErrorMessage = "";
 
-    // Use existing DTOs only - no custom classes
     private List<NmTranscriptResult> Transcripts = new();
     private List<GeneVariantResult> GeneVariants = new();
 
-    // Sorted list according to specifications using existing DTO
     private List<NmTranscriptResult> SortedTranscripts =>
         Transcripts
             .OrderBy(x => GetSortPriority(x))
@@ -161,9 +168,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Debug: Log parameters
-        Console.WriteLine($"PositionPage parameters - GeneId: '{GeneId}', Chromosome: '{Chromosome}', Position: '{Position}'");
-
+        Console.WriteLine($"PositionPage parameters - Id: '{Id}', Chromosome: '{Chromosome}', Position: '{Position}'");
         await LoadPositionData();
     }
 
@@ -174,35 +179,17 @@
             IsLoading = true;
             ErrorMessage = "";
 
-            // Debug parameters
-            Console.WriteLine($"Loading data - GeneId: '{GeneId}', Chromosome: '{Chromosome}', Position: '{Position}'");
-
-            if (!string.IsNullOrEmpty(GeneId))
+            if (Id.HasValue)
             {
-                Console.WriteLine($"Loading gene data for: {GeneId}");
-                await LoadGeneData(GeneId);
+                await LoadByVariantId(Id.Value);
             }
             else if (!string.IsNullOrEmpty(Chromosome) && !string.IsNullOrEmpty(Position))
             {
-                Console.WriteLine($"Loading position data for: {Chromosome}:{Position}");
-                await LoadPositionData(Chromosome, Position);
+                await LoadByChromosomePosition(Chromosome, Position);
             }
             else
             {
-                // No URL parameters - try to get the first available gene from API
-                Console.WriteLine("No parameters provided, trying to load first available gene");
-
-                var allGenes = await ApiService.GetAllGenesAsync();
-                if (allGenes.Any())
-                {
-                    var firstGene = allGenes.First();
-                    Console.WriteLine($"Loading first available gene: {firstGene.Name}");
-                    await LoadGeneData(firstGene.Name);
-                }
-                else
-                {
-                    ErrorMessage = "No genes found in database. Please provide a gene name or chromosome and position.";
-                }
+                ErrorMessage = "Please provide either a variant ID or chromosome and position.";
             }
         }
         catch (Exception ex)
@@ -216,15 +203,37 @@
         }
     }
 
-    private async Task LoadGeneData(string geneName)
+    private async Task LoadByVariantId(int variantId)
     {
-        var gene = await ApiService.GetGeneByNameAsync(geneName);
-        if (gene != null)
-        {
-            GeneName = gene.Name;
+        // Instead of trying to get variant, search all genes to find one with this variant ID
+        var allGenes = await ApiService.GetAllGenesAsync();
 
-            // Convert to existing DTO
-            Transcripts = gene.NmNumbers?.Select(t => new NmTranscriptResult
+        GeneResult? foundGene = null;
+        Variant? foundVariant = null;
+
+        foreach (var gene in allGenes)
+        {
+            if (gene.Variants != null)
+            {
+                foundVariant = gene.Variants.FirstOrDefault(v => v.VariantId == variantId);
+                if (foundVariant != null)
+                {
+                    foundGene = gene;
+                    break;
+                }
+            }
+        }
+
+        if (foundGene != null && foundVariant != null)
+        {
+            GeneName = foundGene.Name;
+            this.Chromosome = foundVariant.Chromosome ?? "";
+            this.Position = foundVariant.Position?.ToString() ?? "";
+            Reference = foundVariant.Reference ?? "";
+            Alternative = foundVariant.Alternative ?? "";
+
+            // Get transcripts from the found gene
+            Transcripts = foundGene.NmNumbers?.Select(t => new NmTranscriptResult
                 {
                     NmNumber = t.NmNumber ?? "",
                     GeneId = t.GeneId ?? "",
@@ -233,8 +242,8 @@
                     IsInHouse = t.IsInHouse
                 }).ToList() ?? new List<NmTranscriptResult>();
 
-            // Load variant info for position
-            var variants = gene.Variants?.Select(v => new VariantResult
+            // Get gene variants
+            var variants = foundGene.Variants?.Select(v => new VariantResult
                 {
                     VariantId = v.VariantId,
                     Chromosome = v.Chromosome,
@@ -244,59 +253,109 @@
                     UserInfo = v.UserInfo
                 }).ToList() ?? new List<VariantResult>();
 
-            // Set position info from variants
-            if (variants.Any())
-            {
-                var firstVariant = variants.First();
-                if (string.IsNullOrEmpty(this.Chromosome))
-                    this.Chromosome = firstVariant.Chromosome ?? "";
-                if (string.IsNullOrEmpty(this.Position))
-                    this.Position = firstVariant.Position?.ToString() ?? "";
-                Reference = firstVariant.Reference ?? "";
-                Alternative = firstVariant.Alternative ?? "";
-            }
-
-            // Load gene variants using existing DTO
             GeneVariants = await ApiService.GetGeneVariantsForVariantsAsync(variants);
         }
         else
         {
-            ErrorMessage = $"Gene '{geneName}' not found.";
+            ErrorMessage = $"Variant with ID {variantId} not found.";
         }
     }
 
-    private async Task LoadPositionData(string chromosome, string position)
+    private async Task LoadByChromosomePosition(string chromosome, string position)
     {
+        this.Chromosome = chromosome;
+        this.Position = position;
+
+        // Use the variants API to get variant info directly
         if (int.TryParse(position, out int pos))
         {
+            // First, try to get the variant directly using the variants API
             var variants = await ApiService.SearchVariantsAsync(chromosome, pos);
-            if (variants.Any())
+            var matchingVariant = variants.FirstOrDefault();
+
+            if (matchingVariant != null)
             {
-                var variant = variants.First();
-                this.Chromosome = variant.Chromosome ?? "";
-                this.Position = variant.Position?.ToString() ?? "";
-                Reference = variant.Reference ?? "";
-                Alternative = variant.Alternative ?? "";
-
-                var allGenes = await ApiService.GetAllGenesAsync();
-                var associatedGene = allGenes.FirstOrDefault(g =>
-                    g.Chromosome == chromosome &&
-                    variant.Position >= g.Start &&
-                    variant.Position <= g.Stop);
-
-                if (associatedGene != null)
-                {
-                    await LoadGeneData(associatedGene.Name);
-                }
-                else
-                {
-                    ErrorMessage = $"No gene found containing position {chromosome}:{position}";
-                }
+                Reference = matchingVariant.Reference ?? "";
+                Alternative = matchingVariant.Alternative ?? "";
+                Console.WriteLine($"Found variant: Reference={Reference}, Alternative={Alternative}");
             }
             else
             {
-                ErrorMessage = $"No variants found at {chromosome}:{position}";
+                Console.WriteLine($"No variant found for {chromosome}:{position}");
+                // Fallback: try to find variant info from genes
+                var allGenes = await ApiService.GetAllGenesAsync();
+
+                foreach (var gene in allGenes)
+                {
+                    if (gene.Variants != null)
+                    {
+                        var geneVariant = gene.Variants.FirstOrDefault(v =>
+                            v.Chromosome == chromosome && v.Position == pos);
+
+                        if (geneVariant != null)
+                        {
+                            Reference = geneVariant.Reference ?? "";
+                            Alternative = geneVariant.Alternative ?? "";
+                            Console.WriteLine($"Found variant from gene: Reference={Reference}, Alternative={Alternative}");
+                            break;
+                        }
+                    }
+                }
             }
+        }
+
+        await LoadTranscriptsForPosition();
+    }
+
+    private async Task LoadTranscriptsForPosition()
+    {
+        // Get all transcripts and find the gene that contains this position
+        var allGenes = await ApiService.GetAllGenesAsync();
+
+        if (int.TryParse(Position, out int pos))
+        {
+            var genesContainingPosition = allGenes.Where(g =>
+                g.Chromosome == Chromosome &&
+                pos >= g.Start &&
+                pos <= g.Stop).ToList();
+
+            if (genesContainingPosition.Any())
+            {
+                // Use the first gene found
+                var gene = genesContainingPosition.First();
+                GeneName = gene.Name;
+
+                // Get all transcripts for this gene
+                Transcripts = gene.NmNumbers?.Select(t => new NmTranscriptResult
+                    {
+                        NmNumber = t.NmNumber ?? "",
+                        GeneId = t.GeneId ?? "",
+                        IsSelect = t.IsSelect,
+                        IsClinical = t.IsClinical,
+                        IsInHouse = t.IsInHouse
+                    }).ToList() ?? new List<NmTranscriptResult>();
+
+                // Load gene variants for additional info
+                var variants = gene.Variants?.Select(v => new VariantResult
+                    {
+                        VariantId = v.VariantId,
+                        Chromosome = v.Chromosome,
+                        Position = v.Position,
+                        Reference = v.Reference,
+                        Alternative = v.Alternative,
+                        UserInfo = v.UserInfo
+                    }).ToList() ?? new List<VariantResult>();
+
+                GeneVariants = await ApiService.GetGeneVariantsForVariantsAsync(variants);
+            }
+            else
+            {
+                ErrorMessage = $"No gene found containing position {Chromosome}:{Position}";
+            }
+        }
+        else
+        {
+            ErrorMessage = "Invalid position format.";
         }
     }
 
@@ -310,18 +369,7 @@
         if (transcript.IsInHouse) return 1;   // InHouse first
         if (transcript.IsSelect) return 2;    // Select second
         if (transcript.IsClinical) return 3;  // Clinical third
-        return 4;                             // Others last
-    }
-
-    private string GetPriorityBorderClass(NmTranscriptResult transcript)
-    {
-        return GetSortPriority(transcript) switch
-        {
-            1 => "border-primary",   // InHouse
-            2 => "border-success",   // Select
-            3 => "border-info",      // Clinical
-            _ => "border-secondary"  // Others
-        };
+        return 4;                             // Alphabetical last
     }
 
     private string GetPriorityBadge(NmTranscriptResult transcript)
@@ -348,8 +396,9 @@
         };
     }
 
-    private async Task EditItem(NmTranscriptResult transcript)
+    private void EditTranscript(NmTranscriptResult transcript)
     {
-        await JSRuntime.InvokeVoidAsync("console.log", $"Edit clicked for: {transcript.NmNumber}");
+        // Navigate to edit page for this specific transcript
+        Navigation.NavigateTo($"/gene/edit/{Uri.EscapeDataString(GeneName)}/{Uri.EscapeDataString(transcript.NmNumber)}");
     }
 }
