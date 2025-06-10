@@ -1,6 +1,11 @@
 ﻿@page "/"
 @using AzDeltaKVT.UI.Services
 @using AzDeltaKVT.Dto.Results
+@using Microsoft.AspNetCore.Http
+@using AzDeltaKVT.Dto.Requests
+@using Microsoft.AspNetCore.Http.Internal
+@using System.Net.Http.Headers
+@using AzDeltaKVT.UI.Modal
 @inject ApiService Api
 @inject NavigationManager Navigation
 
@@ -51,57 +56,89 @@
         </div>
     </section>
 
-    <section>
-        <button @onclick="NavigateToUpload" class="btn btn-main fw-bold">Upload</button>
-    </section>
+	<section>
+		<button @onclick="ToggleUploadModal" class="btn btn-main fw-bold">Upload</button>
+	</section>
+	<!-- Upload Modal -->
+	@if (showUploadModal)
+	{
+		<div class="modal fade show d-block" tabindex="-1" @onclick="ToggleUploadModal" style="background-color: rgba(0, 0, 0, 0.5);">
+			<div class="modal-dialog" @onclick:stopPropagation>
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">Upload Data</h5>
+						<button type="button" class="btn-close" @onclick="ToggleUploadModal"></button>
+					</div>
+					<div class="modal-body">
+						<div @ondragover:preventDefault="true" class="border border-2 border-dashed rounded p-4 text-center" style="background-color: #f8f9fa;">
+							<p class="mb-2">Drag and drop your TSV file here</p>
+							<p class="small text-muted">or click to select</p>
+							<InputFile OnChange="HandleFileSelected" accept=".tsv" multiple="false" class="form-control" />
+						</div>
 
-    <!-- Debug section - compact version -->
-    @if (isLoading || testResults.Any())
-    {
-        <section class="mt-5">
-            <div class="card">
-                <div class="card-header py-2">
-                    <h6 class="mb-0 text-muted">
-                        API Connection Status @(isLoading ? "(Testing...)" : $"({testResults.Count} checks)")
-                    </h6>
-                </div>
-                @if (isLoading || testResults.Any(r => r.Contains("❌")))
-                {
-                    <div class="card-body py-2">
-                        @if (isLoading)
-                        {
-                            <div class="d-flex align-items-center">
-                                <div class="spinner-border spinner-border-sm text-main me-2" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                                <small class="text-muted">Testing API endpoints...</small>
-                            </div>
-                        }
-                        
-                        @if (testResults.Any())
-                        {
-                            @foreach (var result in testResults)
-                            {
-                                <div class="small mb-1">@result</div>
-                            }
-                        }
-                    </div>
-                }
-            </div>
-        </section>
-    }
+						@if (!string.IsNullOrEmpty(uploadMessage))
+						{
+							<div class="mt-2 alert alert-info">@uploadMessage</div>
+						}
+					</div>
+					<div class="modal-footer">
+						<button class="btn btn-secondary" @onclick="ToggleUploadModal">Close</button>
+						<button class="btn btn-main" @onclick="UploadFile">Upload</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+
+
+	<!-- Debug section - compact version -->
+	@if (isLoading || testResults.Any())
+	{
+		<section class="mt-5">
+			<div class="card">
+				<div class="card-header py-2">
+					<h6 class="mb-0 text-muted">
+						API Connection Status @(isLoading ? "(Testing...)" : $"({testResults.Count} checks)")
+					</h6>
+				</div>
+				@if (isLoading || testResults.Any(r => r.Contains("❌")))
+				{
+					<div class="card-body py-2">
+						@if (isLoading)
+						{
+							<div class="d-flex align-items-center">
+								<div class="spinner-border spinner-border-sm text-main me-2" role="status">
+									<span class="visually-hidden">Loading...</span>
+								</div>
+								<small class="text-muted">Testing API endpoints...</small>
+							</div>
+						}
+
+						@if (testResults.Any())
+						{
+							@foreach (var result in testResults)
+							{
+								<div class="small mb-1">@result</div>
+							}
+						}
+					</div>
+				}
+			</div>
+		</section>
+	}
 </div>
 
 @code {
-    private string geneSearchTerm = "";
-    private string chromosomeSearchTerm = "";
-    private string positionSearchTerm = "";
-    
-    private string geneErrorMessage = "";
-    private string positionErrorMessage = "";
-    
-    private bool isLoading = false;
-    private List<string> testResults = new();
+	private string geneSearchTerm = "";
+	private string chromosomeSearchTerm = "";
+	private string positionSearchTerm = "";
+
+	private string geneErrorMessage = "";
+	private string positionErrorMessage = "";
+
+	private bool isLoading = false;
+	private List<string> testResults = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -175,15 +212,15 @@
         }
     }
 
-    private async Task SearchGene()
-    {
-        geneErrorMessage = "";
+	private async Task SearchGene()
+	{
+		geneErrorMessage = "";
 
-        if (string.IsNullOrWhiteSpace(geneSearchTerm))
-        {
-            geneErrorMessage = "Please enter a gene name or NM number";
-            return;
-        }
+		if (string.IsNullOrWhiteSpace(geneSearchTerm))
+		{
+			geneErrorMessage = "Please enter a gene name or NM number";
+			return;
+		}
 
         var searchTerm = geneSearchTerm.Trim();
         
@@ -197,21 +234,21 @@
         }
     }
 
-    private async Task SearchPosition()
-    {
-        positionErrorMessage = "";
+	private async Task SearchPosition()
+	{
+		positionErrorMessage = "";
 
-        if (string.IsNullOrWhiteSpace(chromosomeSearchTerm))
-        {
-            positionErrorMessage = "Please enter a chromosome";
-            return;
-        }
+		if (string.IsNullOrWhiteSpace(chromosomeSearchTerm))
+		{
+			positionErrorMessage = "Please enter a chromosome";
+			return;
+		}
 
-        if (string.IsNullOrWhiteSpace(positionSearchTerm))
-        {
-            positionErrorMessage = "Please enter a position";
-            return;
-        }
+		if (string.IsNullOrWhiteSpace(positionSearchTerm))
+		{
+			positionErrorMessage = "Please enter a position";
+			return;
+		}
 
         if (!int.TryParse(positionSearchTerm.Trim(), out int position))
         {
@@ -219,11 +256,11 @@
             return;
         }
 
-        if (position <= 0)
-        {
-            positionErrorMessage = "Position must be greater than 0";
-            return;
-        }
+		if (position <= 0)
+		{
+			positionErrorMessage = "Position must be greater than 0";
+			return;
+		}
 
         var chromosome = chromosomeSearchTerm.Trim();
         
@@ -239,8 +276,68 @@
         }
     }
 
-    private void NavigateToUpload()
-    {
-        Navigation.NavigateTo("/upload");
-    }
+	[Inject]
+	private UploadResultState uploadResultState { get; set; }
+
+	private void NavigateToUploadResults(AzDeltaKVT.Dto.Results.UploadResult result)
+	{
+		uploadResultState.Result = result;
+		Navigation.NavigateTo("/UploadResult");
+	}
+
+
+	private bool showUploadModal = false;
+	private string uploadMessage = "";
+	private IBrowserFile? selectedFile;
+
+	private void ToggleUploadModal()
+	{
+		showUploadModal = !showUploadModal;
+	}
+
+	private async Task HandleFileSelected(InputFileChangeEventArgs e)
+	{
+		var file = e.File;
+
+		if (file == null || !file.Name.EndsWith(".tsv", StringComparison.OrdinalIgnoreCase))
+		{
+			uploadMessage = "Please select a valid .tsv file.";
+			return;
+		}
+
+		selectedFile = file;
+	}
+
+
+	private async Task UploadFile()
+	{
+		if (selectedFile == null)
+		{
+			uploadMessage = "No file selected.";
+			return;
+		}
+
+		try
+		{
+			uploadMessage = "Uploading...";
+
+			AzDeltaKVT.Dto.Results.UploadResult response = await Api.UploadFileAsync(selectedFile);
+
+			if (!response.Errors.Any())
+			{
+				uploadMessage = "✅ File uploaded successfully.";
+				showUploadModal = false;
+
+				NavigateToUploadResults(response);
+			}
+			else
+			{
+				uploadMessage = $"❌ Upload failed: {response.Errors[0]}";
+			}
+		}
+		catch (Exception ex)
+		{
+			uploadMessage = $"❌ Error: {ex.Message}";
+		}
+	}
 }

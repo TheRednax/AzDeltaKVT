@@ -17,5 +17,8 @@ namespace AzDeltaKVT.Dto.Requests
 
         public string Nm_Number { get; set; }
         public int? Position { get; set; }
+        public bool IsSelect { get; set; }
+        public bool IsClinical { get; set; }
+        public bool IsInHouse { get; set; }
     }
 }

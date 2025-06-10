@@ -136,20 +136,38 @@ namespace AzDeltaKVT.Services
                 Chromosome = request.Chromosome,
                 Start = 0,
                 Stop = request.Stop,
-                UserInfo = request.UserInfo
+                UserInfo = request.UserInfo ?? string.Empty
             };
 
             _context.Genes.Add(entity);
             await _context.SaveChangesAsync();
 
-            return new GeneResult
+            var result = new GeneResult
             {
                 Name = entity.Name,
                 Chromosome = entity.Chromosome,
                 Start = entity.Start,
                 Stop = entity.Stop,
-                UserInfo = entity.UserInfo
+                UserInfo = entity.UserInfo,
+                IsSelect = request.IsSelect,
+                IsInHouse = request.IsInHouse,
+                IsClinical = request.IsClinical
             };
+
+            var transcript = new NmTranscript
+            {
+                Gene = entity,
+                GeneId = entity.Name,
+                NmNumber = request.Nm_Number,
+                IsSelect = request.IsSelect,
+                IsInHouse = request.IsInHouse,
+                IsClinical = request.IsClinical
+            };
+
+            _context.NmTranscripts.Add(transcript);
+            await _context.SaveChangesAsync();
+
+            return result;
         }
 
         public async Task<GeneResult> Update(GeneRequest gene)
@@ -164,7 +182,8 @@ namespace AzDeltaKVT.Services
 
             await _context.SaveChangesAsync();
 
-            return new GeneResult
+
+            var result = new GeneResult
             {
                 Name = existing.Name,
                 Chromosome = existing.Chromosome,
@@ -172,6 +191,18 @@ namespace AzDeltaKVT.Services
                 Stop = existing.Stop,
                 UserInfo = existing.UserInfo
             };
+
+ 
+            var existingTranscript = await _context.NmTranscripts.FindAsync(gene.Nm_Number);
+            if (existingTranscript == null) return null;
+
+            existingTranscript.IsSelect = gene.IsSelect;
+            existingTranscript.IsInHouse = gene.IsInHouse;
+            existingTranscript.IsClinical = gene.IsClinical;
+
+            await _context.SaveChangesAsync();
+
+            return result;
         }
 
         public async Task<bool> Delete(string name)
