@@ -262,8 +262,17 @@
     }
 
     private void NavigateToPositionPage(int variantId)
-    {
-        Navigation.NavigateTo($"/position?id={variantId}");
+    {        
+        var variant = positions.FirstOrDefault(v => v.VariantId == variantId);
+
+        if (variant != null && variant.Position.HasValue)
+        {
+            Navigation.NavigateTo($"/position/{Uri.EscapeDataString(variant.Chromosome!)}/{variant.Position}");
+        }
+        else
+        {            
+            Navigation.NavigateTo($"/position?id={variantId}");
+        }
     }
 
     private void NavigateToEditGene()

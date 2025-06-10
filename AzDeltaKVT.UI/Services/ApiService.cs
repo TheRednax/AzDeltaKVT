@@ -131,8 +131,8 @@ namespace AzDeltaKVT.UI.Services
             return new List<VariantResult>();
         }
 
-        public async Task<List<VariantResult>> SearchVariantsAsync(string? chromosome = null, int? position = null, int? variantId = null)
-        {
+      public async Task<List<VariantResult>> SearchVariantsAsync(string? chromosome = null, int? position = null, int? variantId = null)
+      {
             var request = new VariantRequest
             {
                 VariantId = variantId ?? 0,
@@ -150,8 +150,31 @@ namespace AzDeltaKVT.UI.Services
             if (response.IsSuccessStatusCode)
             {
                 var responseJson = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"SearchVariants API Response: {responseJson}"); // Debug log
-                return JsonSerializer.Deserialize<List<VariantResult>>(responseJson, _jsonOptions) ?? new List<VariantResult>();
+                Console.WriteLine($"SearchVariants API Response: {responseJson}");
+        
+                try
+                {
+                    // Try to deserialize as a single object first
+                    var singleVariant = JsonSerializer.Deserialize<VariantResult>(responseJson, _jsonOptions);
+                    if (singleVariant != null)
+                    {
+                        return new List<VariantResult> { singleVariant };
+                    }
+                }
+                catch (JsonException)
+                {
+                    // If single object fails, try as array
+                    try
+                    {
+                        var variantList = JsonSerializer.Deserialize<List<VariantResult>>(responseJson, _jsonOptions);
+                        return variantList ?? new List<VariantResult>();
+                    }
+                    catch (JsonException ex)
+                    {
+                        Console.WriteLine($"JSON Deserialization error for both single and array: {ex.Message}");
+                        Console.WriteLine($"Raw JSON: {responseJson}");
+                    }
+                }
             }
             else
             {
@@ -159,7 +182,7 @@ namespace AzDeltaKVT.UI.Services
                 Console.WriteLine($"SearchVariants API Error: {response.StatusCode} - {error}");
             }
             return new List<VariantResult>();
-        }
+      }
 
         public async Task<VariantResult?> GetVariantAsync(int id)
         {
