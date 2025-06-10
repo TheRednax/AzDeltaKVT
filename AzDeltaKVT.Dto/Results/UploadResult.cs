@@ -10,7 +10,8 @@ namespace AzDeltaKVT.Dto.Results
 	public class UploadResult
 	{
 		public List<UploadRowResult> Rows { get; set; }
-		public IFormFile TsvFile { get; set; }
 		public List<string> Errors { get; set; }
+		public string FileName { get; set; }
+		public string DownloadUrl { get; set; }
 	}
 }

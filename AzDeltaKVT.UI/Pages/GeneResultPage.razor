@@ -183,7 +183,6 @@
     private string errorMessage = "";
     private string searchType = "";
 
-    // Updated to use DTO types
     private List<GeneResult>? geneResults;
     private List<VariantResult>? variantResults;
     private Dictionary<string, List<NmTranscript>> geneTranscripts = new();
@@ -206,7 +205,6 @@
 
         try
         {
-            // Reset results
             geneResults = null;
             variantResults = null;
             geneTranscripts.Clear();
@@ -245,15 +243,11 @@
 
     private async Task SearchByGene(string geneName)
     {
-        // Use ApiService for gene search - now returns GeneResult
         geneResults = await Api.SearchGenesAsync(name: geneName);
         
         if (geneResults != null && geneResults.Any())
         {
-            // Sort genes alphabetically by name
             geneResults = geneResults.OrderBy(g => g.Name).ToList();
-
-            // Extract transcripts and variants from gene response (already included)
             LoadTranscriptsFromGenes();
             LoadVariantsFromGenes();
         }
@@ -261,18 +255,15 @@
 
     private async Task SearchByNm(string nmNumber)
     {
-        // Search for transcript by NM number, then get the associated gene
         var transcript = await Api.GetTranscriptAsync(nmNumber);
         
         if (transcript?.Gene != null)
         {
-            // Model.Gene doesn't have Variants/NmNumbers - we need to search for the full gene data
             var fullGenes = await Api.SearchGenesAsync(name: transcript.Gene.Name);
             
             if (fullGenes != null && fullGenes.Any())
             {
                 geneResults = fullGenes;
-                // Add the transcript we found to the transcripts dictionary
                 geneTranscripts[transcript.Gene.Name] = new List<NmTranscript>
                 {
                 new NmTranscript
@@ -291,8 +282,14 @@
 
     private async Task SearchByPosition(string chromosome, int position)
     {
-        // Use ApiService for variant search - now returns VariantResult
-        variantResults = await Api.SearchVariantsAsync(chromosome: chromosome, position: position);
+        geneResults = await Api.SearchByChromosomePositionAsync(chromosome, position);
+        
+        if (geneResults != null && geneResults.Any())
+        {
+            geneResults = geneResults.OrderBy(g => g.Name).ToList();
+            LoadTranscriptsFromGenes();
+            LoadVariantsFromGenes();
+        }
     }
 
     private void LoadTranscriptsFromGenes()
@@ -301,7 +298,6 @@
 
         foreach (var gene in geneResults)
         {
-            // Transcripts are now included in the gene response
             geneTranscripts[gene.Name] = gene.NmNumbers ?? new List<NmTranscript>();
         }
     }
@@ -314,10 +310,8 @@
 
         foreach (var gene in geneResults)
         {
-            // Variants are now included in the gene response
             if (gene.Variants != null)
             {
-                // Convert from Model.Variant to VariantResult
                 foreach (var variant in gene.Variants)
                 {
                     allVariants.Add(new VariantResult
@@ -348,7 +342,22 @@
 
     private void NavigateToPositionPage(int variantId)
     {
-        Navigation.NavigateTo($"/position?id={variantId}");
+        Console.WriteLine($"NavigateToPositionPage called with variantId: {variantId}");
+
+        var variant = variantResults?.FirstOrDefault(v => v.VariantId == variantId);
+
+        Console.WriteLine($"Found variant: {variant?.Chromosome}:{variant?.Position} (Ref: {variant?.Reference}, Alt: {variant?.Alternative})");
+
+        if (variant != null && variant.Position.HasValue)
+        {
+            var url = $"/position/{Uri.EscapeDataString(variant.Chromosome!)}/{variant.Position}";
+            Console.WriteLine($"Navigating to: {url}");
+            Navigation.NavigateTo(url);
+        }
+        else
+        {
+            Console.WriteLine("Variant not found or invalid position");
+        }
     }
 
     private void NavigateToAddGene()

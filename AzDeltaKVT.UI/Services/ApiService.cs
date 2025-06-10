@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Components.Forms;
 using AzDeltaKVT.Dto.Requests;
@@ -21,7 +22,6 @@ namespace AzDeltaKVT.UI.Services
             };
         }
 
-        // Gene API calls - Updated to use real DTOs
         public async Task<List<GeneResult>> GetAllGenesAsync()
         {
             Console.WriteLine("GetAllGenesAsync called");
@@ -31,7 +31,7 @@ namespace AzDeltaKVT.UI.Services
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"GetAllGenes API Response: {json}"); // Debug log
+                Console.WriteLine($"GetAllGenes API Response: {json}");
                 try
                 {
                     var result = JsonSerializer.Deserialize<List<GeneResult>>(json, _jsonOptions) ?? new List<GeneResult>();
@@ -57,16 +57,16 @@ namespace AzDeltaKVT.UI.Services
         {
             Console.WriteLine($"SearchGenesAsync called with: name={name}, nmNumber={nmNumber}, position={position}");
 
-            // Use real GeneRequest DTO
+
             var request = new GeneRequest
             {
-                Name = name ?? "",              
-                Chromosome = "",                
-                Start = 0,                      
-                Stop = 0,                       
-                UserInfo = "",                  
-                Nm_Number = nmNumber ?? "",     
-                Position = position             
+                Name = name ?? "",
+                Chromosome = "",
+                Start = 0,
+                Stop = 0,
+                UserInfo = null,
+                Nm_Number = nmNumber ?? "",
+                Position = position
             };
 
             var json = JsonSerializer.Serialize(request, _jsonOptions);
@@ -107,7 +107,7 @@ namespace AzDeltaKVT.UI.Services
             return genes.FirstOrDefault(g => g.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
         }
 
-        // Transcript API calls - Updated to use DTOs
+
         public async Task<NmTranscriptResult?> GetTranscriptAsync(string nmNumber)
         {
             var response = await _httpClient.GetAsync($"/transcripts/{Uri.EscapeDataString(nmNumber)}");
@@ -119,7 +119,6 @@ namespace AzDeltaKVT.UI.Services
             return null;
         }
 
-        // Variant API calls - Updated to use DTOs
         public async Task<List<VariantResult>> GetAllVariantsAsync()
         {
             var response = await _httpClient.GetAsync("/variants");
@@ -132,9 +131,8 @@ namespace AzDeltaKVT.UI.Services
             return new List<VariantResult>();
         }
 
-        public async Task<List<VariantResult>> SearchVariantsAsync(string? chromosome = null, int? position = null, int? variantId = null)
-        {
-            // Use real VariantRequest DTO
+      public async Task<List<VariantResult>> SearchVariantsAsync(string? chromosome = null, int? position = null, int? variantId = null)
+      {
             var request = new VariantRequest
             {
                 VariantId = variantId ?? 0,
@@ -142,7 +140,7 @@ namespace AzDeltaKVT.UI.Services
                 Position = position ?? 0,
                 Alternative = "",
                 Reference = "",
-                UserInfo = ""  // Required field
+                UserInfo = ""
             };
 
             var json = JsonSerializer.Serialize(request, _jsonOptions);
@@ -152,8 +150,31 @@ namespace AzDeltaKVT.UI.Services
             if (response.IsSuccessStatusCode)
             {
                 var responseJson = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"SearchVariants API Response: {responseJson}"); // Debug log
-                return JsonSerializer.Deserialize<List<VariantResult>>(responseJson, _jsonOptions) ?? new List<VariantResult>();
+                Console.WriteLine($"SearchVariants API Response: {responseJson}");
+        
+                try
+                {
+                    // Try to deserialize as a single object first
+                    var singleVariant = JsonSerializer.Deserialize<VariantResult>(responseJson, _jsonOptions);
+                    if (singleVariant != null)
+                    {
+                        return new List<VariantResult> { singleVariant };
+                    }
+                }
+                catch (JsonException)
+                {
+                    // If single object fails, try as array
+                    try
+                    {
+                        var variantList = JsonSerializer.Deserialize<List<VariantResult>>(responseJson, _jsonOptions);
+                        return variantList ?? new List<VariantResult>();
+                    }
+                    catch (JsonException ex)
+                    {
+                        Console.WriteLine($"JSON Deserialization error for both single and array: {ex.Message}");
+                        Console.WriteLine($"Raw JSON: {responseJson}");
+                    }
+                }
             }
             else
             {
@@ -161,7 +182,7 @@ namespace AzDeltaKVT.UI.Services
                 Console.WriteLine($"SearchVariants API Error: {response.StatusCode} - {error}");
             }
             return new List<VariantResult>();
-        }
+      }
 
         public async Task<VariantResult?> GetVariantAsync(int id)
         {
@@ -216,6 +237,200 @@ namespace AzDeltaKVT.UI.Services
                 return await SearchVariantsAsync(chromosome, position);
             }
             return await GetAllVariantsAsync();
+        }
+
+        public async Task<List<GeneResult>> SearchByChromosomePositionAsync(string chromosome, int position)
+        {
+            Console.WriteLine($"SearchByChromosomePositionAsync called with: chromosome={chromosome}, position={position}");
+
+
+            var request = new GeneRequest
+            {
+                Name = "",
+                Chromosome = chromosome,
+                Start = 0,
+                Stop = 0,
+                UserInfo = null,
+                Nm_Number = "",
+                Position = position
+            };
+
+            var json = JsonSerializer.Serialize(request, _jsonOptions);
+            Console.WriteLine($"Request JSON: {json}");
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync("/genes/get", content);
+            Console.WriteLine($"Response status: {response.StatusCode}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var responseJson = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"SearchByChromosomePosition API Response: {responseJson}");
+                try
+                {
+                    var result = JsonSerializer.Deserialize<List<GeneResult>>(responseJson, _jsonOptions) ?? new List<GeneResult>();
+                    Console.WriteLine($"Deserialized {result.Count} genes");
+                    return result;
+                }
+                catch (JsonException ex)
+                {
+                    Console.WriteLine($"JSON Deserialization error: {ex.Message}");
+                    Console.WriteLine($"Raw JSON: {responseJson}");
+                    return new List<GeneResult>();
+                }
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"SearchByChromosomePosition API Error: {response.StatusCode} - {error}");
+            }
+            return new List<GeneResult>();
+        }
+
+        public async Task<UploadResult> UploadFileAsync(IBrowserFile file)
+        {
+	        if (file == null)
+		        throw new ArgumentNullException(nameof(file));
+
+	        var maxAllowedSize = 10 * 1024 * 1024; // 10 MB max size
+
+	        using var content = new MultipartFormDataContent();
+	        using var stream = file.OpenReadStream(maxAllowedSize);
+	        var streamContent = new StreamContent(stream);
+	        var mediaType = string.IsNullOrWhiteSpace(file.ContentType)
+		        ? "text/tab-separated-values"
+		        : file.ContentType;
+	        streamContent.Headers.ContentType = new MediaTypeHeaderValue(mediaType);
+
+
+	        content.Add(streamContent, "TsvFile", file.Name);
+
+	        var response = await _httpClient.PostAsync("/upload", content);
+
+	        if (response.IsSuccessStatusCode)
+	        {
+		        // Optionally parse response content
+		        string result = await response.Content.ReadAsStringAsync();
+		        return JsonSerializer.Deserialize<AzDeltaKVT.Dto.Results.UploadResult>(result, _jsonOptions) ??
+		               new AzDeltaKVT.Dto.Results.UploadResult();
+	        }
+	        else
+	        {
+		        var error = await response.Content.ReadAsStringAsync();
+		        throw new Exception($"File upload failed: {error}");
+	        }
+        }
+
+        public async Task<bool> CreateGeneAsync(GeneRequest request)
+        {
+            Console.WriteLine($"CreateGeneAsync called with: {request.Name}");
+
+            var json = JsonSerializer.Serialize(request, _jsonOptions);
+            Console.WriteLine($"Create Gene Request JSON: {json}");
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync("/genes/create", content);
+            Console.WriteLine($"Create Gene Response status: {response.StatusCode}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Gene created successfully");
+                return true;
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Create Gene API Error: {response.StatusCode} - {error}");
+                if (error.Contains("Transcript already exists"))
+                {
+	                throw new Exception("Failed to create gene: transcript already exists, please choose a new transcript number");
+                }
+                else
+                {
+	                throw new Exception($"Failed to create gene: {error}");
+                }
+            }
+        }
+
+        public async Task<bool> UpdateGeneAsync(GeneRequest request)
+        {
+            Console.WriteLine($"UpdateGeneAsync called with: {request.Name}");
+
+            var json = JsonSerializer.Serialize(request, _jsonOptions);
+            Console.WriteLine($"Update Gene Request JSON: {json}");
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PutAsync("/genes/update", content);
+            Console.WriteLine($"Update Gene Response status: {response.StatusCode}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Gene updated successfully");
+                return true;
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Update Gene API Error: {response.StatusCode} - {error}");
+                throw new Exception($"Failed to update gene: {error}");
+            }
+        }
+
+        public async Task<bool> RemoveGeneAsync(string geneName)
+        {
+            Console.WriteLine($"RemoveGeneAsync called with: {geneName}");
+
+            var json = JsonSerializer.Serialize(geneName, _jsonOptions);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "/genes/delete")
+            {
+                Content = content
+            };
+
+            var response = await _httpClient.SendAsync(request);
+            Console.WriteLine($"Remove Gene Response status: {response.StatusCode}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Gene removed successfully");
+                return true;
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Remove Gene API Error: {response.StatusCode} - {error}");
+                throw new Exception($"Failed to remove gene: {error}");
+            }
+        }
+
+        public async Task<bool> RemoveTranscriptAsync(string nmNumber)
+        {
+            Console.WriteLine($"RemoveTranscriptAsync called with: {nmNumber}");
+
+            var transcriptRequest = new NmTranscript { NmNumber = nmNumber };
+            var json = JsonSerializer.Serialize(transcriptRequest, _jsonOptions);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "/transcripts/delete")
+            {
+                Content = content
+            };
+
+            var response = await _httpClient.SendAsync(request);
+            Console.WriteLine($"Remove Transcript Response status: {response.StatusCode}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Transcript removed successfully");
+                return true;
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Remove Transcript API Error: {response.StatusCode} - {error}");
+                throw new Exception($"Failed to remove transcript: {error}");
+            }
         }
     }
 }

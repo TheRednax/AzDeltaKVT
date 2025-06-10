@@ -262,18 +262,31 @@
     }
 
     private void NavigateToPositionPage(int variantId)
-    {
-        Navigation.NavigateTo($"/position?id={variantId}");
+    {        
+        var variant = positions.FirstOrDefault(v => v.VariantId == variantId);
+
+        if (variant != null && variant.Position.HasValue)
+        {
+            Navigation.NavigateTo($"/position/{Uri.EscapeDataString(variant.Chromosome!)}/{variant.Position}");
+        }
+        else
+        {            
+            Navigation.NavigateTo($"/position?id={variantId}");
+        }
     }
 
     private void NavigateToEditGene()
     {
-        var url = $"/gene/edit?name={Uri.EscapeDataString(Name!)}";
         if (!string.IsNullOrEmpty(Nm))
         {
-            url += $"&nm={Uri.EscapeDataString(Nm)}";
+            // Edit specific transcript
+            Navigation.NavigateTo($"/gene/edit/{Uri.EscapeDataString(Name!)}/{Uri.EscapeDataString(Nm)}");
         }
-        Navigation.NavigateTo(url);
+        else
+        {
+            // Edit gene (first transcript)
+            Navigation.NavigateTo($"/gene/edit/{Uri.EscapeDataString(Name!)}");
+        }
     }
 
     private void NavigateToInsertPosition()

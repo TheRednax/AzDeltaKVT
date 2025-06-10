@@ -1,0 +1,53 @@
+﻿@page "/UploadResult"
+@using AzDeltaKVT.UI.Modal
+@inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
+@inject UploadResultState UploadResultState
+
+<PageTitle>Upload Results</PageTitle>
+
+<div class="container py-4">
+    <h1>Upload Results</h1>
+
+    @if (UploadResultState?.Result?.Rows != null && UploadResultState.Result.Rows.Any())
+    {
+	    <table class="table table-striped table-bordered">
+		    <thead>
+		    <tr>
+			    <th>Chromosome</th>
+			    <th>Position</th>
+			    <th>Reference</th>
+			    <th>Alternative</th>
+			    <th>Gene Name</th>
+			    <th>Nm Number</th>
+			    <th>Is In House</th>
+			    <th>Biological Effect</th>
+			    <th>Classification</th>
+			    <th>Is Known Position</th>
+		    </tr>
+		    </thead>
+		    <tbody>
+		    @foreach (var row in UploadResultState.Result.Rows)
+		    {
+			    <tr>
+				    <td>@row.Chromosome</td>
+				    <td>@row.Position</td>
+				    <td>@row.Reference</td>
+				    <td>@row.Alternative</td>
+				    <td>@(string.IsNullOrEmpty(row.GeneName) ? "-" : row.GeneName)</td>
+				    <td>@(string.IsNullOrEmpty(row.NmNumber) ? "-" : row.NmNumber)</td>
+				    <td>@(row.IsInHouse.HasValue ? (row.IsInHouse.Value ? "Yes" : "No") : "-")</td>
+				    <td>@(string.IsNullOrEmpty(row.BiologicalEffect) ? "-" : row.BiologicalEffect)</td>
+				    <td>@(string.IsNullOrEmpty(row.Classification) ? "-" : row.Classification)</td>
+				    <td>@(row.IsKnownPosition ? "Yes" : "No")</td>
+			    </tr>
+		    }
+		    </tbody>
+	    </table>
+	    <a href="@UploadResultState?.Result?.DownloadUrl" target="_blank" class="btn btn-success mt-3">Download</a>
+    }
+    else
+    {
+        <p>No upload results available to display.</p>
+    }
+</div>

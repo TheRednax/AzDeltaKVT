@@ -1,6 +1,11 @@
 ﻿@page "/"
 @using AzDeltaKVT.UI.Services
 @using AzDeltaKVT.Dto.Results
+@using Microsoft.AspNetCore.Http
+@using AzDeltaKVT.Dto.Requests
+@using Microsoft.AspNetCore.Http.Internal
+@using System.Net.Http.Headers
+@using AzDeltaKVT.UI.Modal
 @inject ApiService Api
 @inject NavigationManager Navigation
 
@@ -12,8 +17,8 @@
         <div class="row g-3">
             <div class="col-md-10">
                 <label class="form-label fw-semibold text-main">Gene:</label>
-                <input type="text" @bind="geneSearchTerm" 
-                       @onkeypress="@(async (e) => { if (e.Key == "Enter") await SearchGene(); })"
+                <input type="text" @bind="geneSearchTerm" @bind:event="oninput"
+                       @onkeydown="@(async (e) => await HandleGeneKeyDown(e))"
                        class="form-control" placeholder="Enter gene here" />
                 @if (!string.IsNullOrEmpty(geneErrorMessage))
                 {
@@ -31,14 +36,14 @@
         <div class="row g-3">
             <div class="col-md-5">
                 <label class="form-label fw-semibold text-main">Chromosome:</label>
-                <input type="text" @bind="chromosomeSearchTerm" 
-                       @onkeypress="@(async (e) => { if (e.Key == "Enter") await SearchPosition(); })"
+                <input type="text" @bind="chromosomeSearchTerm" @bind:event="oninput"
+                       @onkeydown="@(async (e) => await HandlePositionKeyDown(e))"
                        class="form-control" placeholder="Enter chromosome here" />
             </div>
             <div class="col-md-5">
                 <label class="form-label fw-semibold text-main">Position:</label>
-                <input type="text" @bind="positionSearchTerm" 
-                       @onkeypress="@(async (e) => { if (e.Key == "Enter") await SearchPosition(); })"
+                <input type="text" @bind="positionSearchTerm" @bind:event="oninput"
+                       @onkeydown="@(async (e) => await HandlePositionKeyDown(e))"
                        class="form-control" placeholder="Enter position here" />
                 @if (!string.IsNullOrEmpty(positionErrorMessage))
                 {
@@ -51,62 +56,110 @@
         </div>
     </section>
 
-    <section>
-        <button @onclick="NavigateToUpload" class="btn btn-main fw-bold">Upload</button>
-    </section>
+	<section>
+		<button @onclick="ToggleUploadModal" class="btn btn-main fw-bold">Upload</button>
+	</section>
+	<!-- Upload Modal -->
+	@if (showUploadModal)
+	{
+		<div class="modal fade show d-block" tabindex="-1" @onclick="ToggleUploadModal" style="background-color: rgba(0, 0, 0, 0.5);">
+			<div class="modal-dialog" @onclick:stopPropagation>
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">Upload Data</h5>
+						<button type="button" class="btn-close" @onclick="ToggleUploadModal"></button>
+					</div>
+					<div class="modal-body">
+						<div @ondragover:preventDefault="true" class="border border-2 border-dashed rounded p-4 text-center" style="background-color: #f8f9fa;">
+							<p class="mb-2">Drag and drop your TSV file here</p>
+							<p class="small text-muted">or click to select</p>
+							<InputFile OnChange="HandleFileSelected" accept=".tsv" multiple="false" class="form-control" />
+						</div>
 
-    <!-- Debug section - compact version -->
-    @if (isLoading || testResults.Any())
-    {
-        <section class="mt-5">
-            <div class="card">
-                <div class="card-header py-2">
-                    <h6 class="mb-0 text-muted">
-                        API Connection Status @(isLoading ? "(Testing...)" : $"({testResults.Count} checks)")
-                    </h6>
-                </div>
-                @if (isLoading || testResults.Any(r => r.Contains("❌")))
-                {
-                    <div class="card-body py-2">
-                        @if (isLoading)
-                        {
-                            <div class="d-flex align-items-center">
-                                <div class="spinner-border spinner-border-sm text-main me-2" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                                <small class="text-muted">Testing API endpoints...</small>
-                            </div>
-                        }
-                        
-                        @if (testResults.Any())
-                        {
-                            @foreach (var result in testResults)
-                            {
-                                <div class="small mb-1">@result</div>
-                            }
-                        }
-                    </div>
-                }
-            </div>
-        </section>
-    }
+						@if (!string.IsNullOrEmpty(uploadMessage))
+						{
+							<div class="mt-2 alert alert-info">@uploadMessage</div>
+						}
+					</div>
+					<div class="modal-footer">
+						<button class="btn btn-secondary" @onclick="ToggleUploadModal">Close</button>
+						<button class="btn btn-main" @onclick="UploadFile">Upload</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
+
+
+	<!-- Debug section - compact version -->
+	@if (isLoading || testResults.Any())
+	{
+		<section class="mt-5">
+			<div class="card">
+				<div class="card-header py-2">
+					<h6 class="mb-0 text-muted">
+						API Connection Status @(isLoading ? "(Testing...)" : $"({testResults.Count} checks)")
+					</h6>
+				</div>
+				@if (isLoading || testResults.Any(r => r.Contains("❌")))
+				{
+					<div class="card-body py-2">
+						@if (isLoading)
+						{
+							<div class="d-flex align-items-center">
+								<div class="spinner-border spinner-border-sm text-main me-2" role="status">
+									<span class="visually-hidden">Loading...</span>
+								</div>
+								<small class="text-muted">Testing API endpoints...</small>
+							</div>
+						}
+
+						@if (testResults.Any())
+						{
+							@foreach (var result in testResults)
+							{
+								<div class="small mb-1">@result</div>
+							}
+						}
+					</div>
+				}
+			</div>
+		</section>
+	}
 </div>
 
 @code {
-    private string geneSearchTerm = "";
-    private string chromosomeSearchTerm = "";
-    private string positionSearchTerm = "";
-    
-    private string geneErrorMessage = "";
-    private string positionErrorMessage = "";
-    
-    private bool isLoading = false;
-    private List<string> testResults = new();
+	private string geneSearchTerm = "";
+	private string chromosomeSearchTerm = "";
+	private string positionSearchTerm = "";
+
+	private string geneErrorMessage = "";
+	private string positionErrorMessage = "";
+
+	private bool isLoading = false;
+	private List<string> testResults = new();
 
     protected override async Task OnInitializedAsync()
     {
-        // Optional: Test API connection on load
+        await Task.Delay(2000);
         await TestApiConnection();
+    }
+
+    private async Task HandleGeneKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchGene();
+        }
+    }
+
+    private async Task HandlePositionKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchPosition();
+        }
     }
 
     private async Task TestApiConnection()
@@ -116,7 +169,6 @@
         
         try
         {
-            // Test GET /genes endpoint
             var genes = await Api.GetAllGenesAsync();
             testResults.Add($"✅ Found {genes.Count} genes in database");
             
@@ -125,20 +177,17 @@
                 var firstGene = genes.First();
                 testResults.Add($"✅ Sample gene: {firstGene.Name} (Chr {firstGene.Chromosome})");
                 
-                // Show transcripts info if available
                 if (firstGene.NmNumbers?.Any() == true)
                 {
                     testResults.Add($"✅ Sample gene has {firstGene.NmNumbers.Count} transcripts");
                 }
                 
-                // Show variants info if available  
                 if (firstGene.Variants?.Any() == true)
                 {
                     testResults.Add($"✅ Sample gene has {firstGene.Variants.Count} variants");
                 }
             }
             
-            // Test POST /genes/get endpoint with a simple search
             var kitSearch = await Api.SearchGenesAsync(name: "KIT");
             if (kitSearch.Any())
             {
@@ -149,7 +198,6 @@
                 testResults.Add($"⚠️ Gene search returned no results for KIT");
             }
             
-            // Test GET /variants endpoint
             var variants = await Api.GetAllVariantsAsync();
             testResults.Add($"✅ Found {variants.Count} total variants");
         }
@@ -164,66 +212,132 @@
         }
     }
 
-    private async Task SearchGene()
-    {
-        geneErrorMessage = "";
+	private async Task SearchGene()
+	{
+		geneErrorMessage = "";
 
-        if (string.IsNullOrWhiteSpace(geneSearchTerm))
-        {
-            geneErrorMessage = "Please enter a gene name or NM number";
-            return;
-        }
+		if (string.IsNullOrWhiteSpace(geneSearchTerm))
+		{
+			geneErrorMessage = "Please enter a gene name or NM number";
+			return;
+		}
 
         var searchTerm = geneSearchTerm.Trim();
         
-        // Check if it's an NM number (starts with NM_)
         if (searchTerm.StartsWith("NM_", StringComparison.OrdinalIgnoreCase))
         {
             Navigation.NavigateTo($"/gene-results?nm={Uri.EscapeDataString(searchTerm)}");
         }
         else
         {
-            // Treat as gene name
             Navigation.NavigateTo($"/gene-results?gene={Uri.EscapeDataString(searchTerm)}");
         }
     }
 
-    private async Task SearchPosition()
-    {
-        positionErrorMessage = "";
+	private async Task SearchPosition()
+	{
+		positionErrorMessage = "";
 
-        if (string.IsNullOrWhiteSpace(chromosomeSearchTerm))
-        {
-            positionErrorMessage = "Please enter a chromosome";
-            return;
-        }
+		if (string.IsNullOrWhiteSpace(chromosomeSearchTerm))
+		{
+			positionErrorMessage = "Please enter a chromosome";
+			return;
+		}
 
-        if (string.IsNullOrWhiteSpace(positionSearchTerm))
-        {
-            positionErrorMessage = "Please enter a position";
-            return;
-        }
+		if (string.IsNullOrWhiteSpace(positionSearchTerm))
+		{
+			positionErrorMessage = "Please enter a position";
+			return;
+		}
 
-        // Validate position is a number
         if (!int.TryParse(positionSearchTerm.Trim(), out int position))
         {
             positionErrorMessage = "Position must be a valid number";
             return;
         }
 
-        if (position <= 0)
-        {
-            positionErrorMessage = "Position must be greater than 0";
-            return;
-        }
+		if (position <= 0)
+		{
+			positionErrorMessage = "Position must be greater than 0";
+			return;
+		}
 
         var chromosome = chromosomeSearchTerm.Trim();
         
-        Navigation.NavigateTo($"/gene-results?chrom={Uri.EscapeDataString(chromosome)}&position={position}");
+        try
+        {
+            var genes = await Api.SearchByChromosomePositionAsync(chromosome, position);
+            Navigation.NavigateTo($"/gene-results?chrom={Uri.EscapeDataString(chromosome)}&position={position}");
+        }
+        catch (Exception ex)
+        {
+            positionErrorMessage = $"Search failed: {ex.Message}";
+            Console.WriteLine($"SearchPosition error: {ex}");
+        }
     }
 
-    private void NavigateToUpload()
-    {
-        Navigation.NavigateTo("/upload");
-    }
+	[Inject]
+	private UploadResultState uploadResultState { get; set; }
+
+	private void NavigateToUploadResults(AzDeltaKVT.Dto.Results.UploadResult result)
+	{
+		uploadResultState.Result = result;
+		Navigation.NavigateTo("/UploadResult");
+	}
+
+
+	private bool showUploadModal = false;
+	private string uploadMessage = "";
+	private IBrowserFile? selectedFile;
+
+	private void ToggleUploadModal()
+	{
+		showUploadModal = !showUploadModal;
+	}
+
+	private async Task HandleFileSelected(InputFileChangeEventArgs e)
+	{
+		var file = e.File;
+
+		if (file == null || !file.Name.EndsWith(".tsv", StringComparison.OrdinalIgnoreCase))
+		{
+			uploadMessage = "Please select a valid .tsv file.";
+			return;
+		}
+
+		selectedFile = file;
+	}
+
+
+	private async Task UploadFile()
+	{
+		if (selectedFile == null)
+		{
+			uploadMessage = "No file selected.";
+			return;
+		}
+
+		try
+		{
+			uploadMessage = "Uploading...";
+
+			AzDeltaKVT.Dto.Results.UploadResult response = await Api.UploadFileAsync(selectedFile);
+
+			if (!response.Errors.Any())
+			{
+				uploadMessage = "✅ File uploaded successfully.";
+				showUploadModal = false;
+
+				NavigateToUploadResults(response);
+			}
+			else
+			{
+				uploadMessage = $"❌ Upload failed: {response.Errors[0]}";
+			}
+		}
+		catch (Exception ex)
+		{
+			uploadMessage = $"❌ Error: {ex.Message}";
+		}
+	}
 }
