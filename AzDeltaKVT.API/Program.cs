@@ -33,25 +33,31 @@ builder.Services.AddScoped<UploadService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+
+//Set seed to true to seed the database with initial data
+//Don't forget to set it to false after the first run to duplicates
+using var scope = app.Services.CreateScope();
+var context = scope.ServiceProvider.GetRequiredService<AzDeltaKVTDbContext>();
+
+try
 {
-	//Set seed to true to seed the database with initial data
-	//Don't forget to set it to false after the first run to duplicates
-	bool seed = false;
+    context.Database.Migrate();
 
-	if (seed)
-	{
-		using (var scope = app.Services.CreateScope())
-		{
-			var context = scope.ServiceProvider.GetRequiredService<AzDeltaKVTDbContext>();
-			context.Seed();
-		}
-	}
-
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    if (!context.Genes.Any())
+    {
+        context.Seed();
+    }
 }
+catch (Exception ex)
+{
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    logger.LogError(ex, "Error during migration or seeding");
+    throw;  // optionally rethrow to crash app so you see error in logs
+}
+
+app.UseSwagger();
+    app.UseSwaggerUI();
+
 
 app.UseCors("AllowAll");
 
