@@ -220,6 +220,16 @@
             errorMessage = "Gene name and NM number are required";
             return;
         }
+        if (start <= 0)
+        {
+	        errorMessage = "Start should be bigger than 0";
+	        return;
+        }
+        if (stop <= 0)
+        {
+	        errorMessage = "Stop Should be bigger than 0";
+	        return;
+        }
 
         isSaving = true;
         errorMessage = "";
