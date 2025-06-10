@@ -17,5 +17,8 @@ namespace AzDeltaKVT.Dto.Results
 
         public List<NmTranscript> NmNumbers { get; set; } = new();
         public List<Variant> Variants { get; set; } = new();
+        public bool IsSelect { get; set; }
+        public bool IsClinical { get; set; }
+        public bool IsInHouse { get; set; }
     }
 }
