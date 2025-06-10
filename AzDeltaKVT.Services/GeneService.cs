@@ -176,7 +176,8 @@ namespace AzDeltaKVT.Services
 
             await _context.SaveChangesAsync();
 
-            return new GeneResult
+
+            var result = new GeneResult
             {
                 Name = existing.Name,
                 Chromosome = existing.Chromosome,
@@ -184,6 +185,18 @@ namespace AzDeltaKVT.Services
                 Stop = existing.Stop,
                 UserInfo = existing.UserInfo
             };
+
+ 
+            var existingTranscript = await _context.NmTranscripts.FindAsync(gene.Nm_Number);
+            if (existingTranscript == null) return null;
+
+            existingTranscript.IsSelect = gene.IsSelect;
+            existingTranscript.IsInHouse = gene.IsInHouse;
+            existingTranscript.IsClinical = gene.IsClinical;
+
+            await _context.SaveChangesAsync();
+
+            return result;
         }
 
         public async Task<bool> Delete(string name)
