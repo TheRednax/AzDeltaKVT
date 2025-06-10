@@ -142,7 +142,7 @@ namespace AzDeltaKVT.Services
             _context.Genes.Add(entity);
             await _context.SaveChangesAsync();
 
-            return new GeneResult
+            var result = new GeneResult
             {
                 Name = entity.Name,
                 Chromosome = entity.Chromosome,
@@ -150,6 +150,18 @@ namespace AzDeltaKVT.Services
                 Stop = entity.Stop,
                 UserInfo = entity.UserInfo
             };
+
+            var transcript = new NmTranscript
+            {
+                Gene = entity,
+                GeneId = entity.Name,
+                NmNumber = request.Nm_Number
+            };
+
+            _context.NmTranscripts.Add(transcript);
+            await _context.SaveChangesAsync();
+
+            return result;
         }
 
         public async Task<GeneResult> Update(GeneRequest gene)
