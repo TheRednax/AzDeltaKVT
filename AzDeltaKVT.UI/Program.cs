@@ -1,4 +1,5 @@
 using AzDeltaKVT.UI;
+using AzDeltaKVT.UI.Modal;
 using AzDeltaKVT.UI.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
@@ -14,5 +15,6 @@ builder.Services.AddScoped(sp => new HttpClient
 
 // Register ApiService
 builder.Services.AddScoped<ApiService>();
+builder.Services.AddScoped<UploadResultState>();
 
 await builder.Build().RunAsync();

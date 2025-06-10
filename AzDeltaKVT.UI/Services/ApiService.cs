@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Components.Forms;
 using AzDeltaKVT.Dto.Requests;
@@ -263,6 +264,36 @@ namespace AzDeltaKVT.UI.Services
                 Console.WriteLine($"SearchByChromosomePosition API Error: {response.StatusCode} - {error}");
             }
             return new List<GeneResult>();
+        }
+        public async Task<UploadResult> UploadFileAsync(IBrowserFile file)
+        {
+	        if (file == null)
+		        throw new ArgumentNullException(nameof(file));
+
+	        var maxAllowedSize = 10 * 1024 * 1024; // 10 MB max size
+
+	        using var content = new MultipartFormDataContent();
+	        using var stream = file.OpenReadStream(maxAllowedSize);
+	        var streamContent = new StreamContent(stream);
+	        var mediaType = string.IsNullOrWhiteSpace(file.ContentType) ? "text/tab-separated-values" : file.ContentType;
+	        streamContent.Headers.ContentType = new MediaTypeHeaderValue(mediaType);
+
+
+	        content.Add(streamContent, "TsvFile", file.Name);
+
+	        var response = await _httpClient.PostAsync("/upload", content);
+
+	        if (response.IsSuccessStatusCode)
+	        {
+		        // Optionally parse response content
+		        string result = await response.Content.ReadAsStringAsync();
+		        return JsonSerializer.Deserialize<AzDeltaKVT.Dto.Results.UploadResult>(result, _jsonOptions) ?? new AzDeltaKVT.Dto.Results.UploadResult();
+	        }
+	        else
+	        {
+		        var error = await response.Content.ReadAsStringAsync();
+		        throw new Exception($"File upload failed: {error}");
+	        }
         }
     }
 }
