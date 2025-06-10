@@ -341,7 +341,14 @@ namespace AzDeltaKVT.UI.Services
             {
                 var error = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"Create Gene API Error: {response.StatusCode} - {error}");
-                throw new Exception($"Failed to create gene: {error}");
+                if (error.Contains("Transcript already exists"))
+                {
+	                throw new Exception("Failed to create gene: transcript already exists, please choose a new transcript number");
+                }
+                else
+                {
+	                throw new Exception($"Failed to create gene: {error}");
+                }
             }
         }
 
