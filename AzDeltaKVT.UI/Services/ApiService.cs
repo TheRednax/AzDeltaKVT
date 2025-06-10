@@ -118,7 +118,6 @@ namespace AzDeltaKVT.UI.Services
             return null;
         }
 
-        // Variant API calls - Updated to use DTOs
         public async Task<List<VariantResult>> GetAllVariantsAsync()
         {
             var response = await _httpClient.GetAsync("/variants");
@@ -133,7 +132,6 @@ namespace AzDeltaKVT.UI.Services
 
         public async Task<List<VariantResult>> SearchVariantsAsync(string? chromosome = null, int? position = null, int? variantId = null)
         {
-            // Use real VariantRequest DTO
             var request = new VariantRequest
             {
                 VariantId = variantId ?? 0,
@@ -263,6 +261,111 @@ namespace AzDeltaKVT.UI.Services
                 Console.WriteLine($"SearchByChromosomePosition API Error: {response.StatusCode} - {error}");
             }
             return new List<GeneResult>();
+        }
+
+        public async Task<bool> CreateGeneAsync(GeneRequest request)
+        {
+            Console.WriteLine($"CreateGeneAsync called with: {request.Name}");
+
+            var json = JsonSerializer.Serialize(request, _jsonOptions);
+            Console.WriteLine($"Create Gene Request JSON: {json}");
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync("/genes/create", content);
+            Console.WriteLine($"Create Gene Response status: {response.StatusCode}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Gene created successfully");
+                return true;
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Create Gene API Error: {response.StatusCode} - {error}");
+                throw new Exception($"Failed to create gene: {error}");
+            }
+        }
+
+        public async Task<bool> UpdateGeneAsync(GeneRequest request)
+        {
+            Console.WriteLine($"UpdateGeneAsync called with: {request.Name}");
+
+            var json = JsonSerializer.Serialize(request, _jsonOptions);
+            Console.WriteLine($"Update Gene Request JSON: {json}");
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PutAsync("/genes/update", content);
+            Console.WriteLine($"Update Gene Response status: {response.StatusCode}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Gene updated successfully");
+                return true;
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Update Gene API Error: {response.StatusCode} - {error}");
+                throw new Exception($"Failed to update gene: {error}");
+            }
+        }
+
+        public async Task<bool> RemoveGeneAsync(string geneName)
+        {
+            Console.WriteLine($"RemoveGeneAsync called with: {geneName}");
+
+            var json = JsonSerializer.Serialize(geneName, _jsonOptions);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "/genes/delete")
+            {
+                Content = content
+            };
+
+            var response = await _httpClient.SendAsync(request);
+            Console.WriteLine($"Remove Gene Response status: {response.StatusCode}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Gene removed successfully");
+                return true;
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Remove Gene API Error: {response.StatusCode} - {error}");
+                throw new Exception($"Failed to remove gene: {error}");
+            }
+        }
+
+        public async Task<bool> RemoveTranscriptAsync(string nmNumber)
+        {
+            Console.WriteLine($"RemoveTranscriptAsync called with: {nmNumber}");
+
+            var transcriptRequest = new NmTranscript { NmNumber = nmNumber };
+            var json = JsonSerializer.Serialize(transcriptRequest, _jsonOptions);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "/transcripts/delete")
+            {
+                Content = content
+            };
+
+            var response = await _httpClient.SendAsync(request);
+            Console.WriteLine($"Remove Transcript Response status: {response.StatusCode}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Transcript removed successfully");
+                return true;
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Remove Transcript API Error: {response.StatusCode} - {error}");
+                throw new Exception($"Failed to remove transcript: {error}");
+            }
         }
     }
 }
