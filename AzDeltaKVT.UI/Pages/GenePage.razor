@@ -268,12 +268,16 @@
 
     private void NavigateToEditGene()
     {
-        var url = $"/gene/edit?name={Uri.EscapeDataString(Name!)}";
         if (!string.IsNullOrEmpty(Nm))
         {
-            url += $"&nm={Uri.EscapeDataString(Nm)}";
+            // Edit specific transcript
+            Navigation.NavigateTo($"/gene/edit/{Uri.EscapeDataString(Name!)}/{Uri.EscapeDataString(Nm)}");
         }
-        Navigation.NavigateTo(url);
+        else
+        {
+            // Edit gene (first transcript)
+            Navigation.NavigateTo($"/gene/edit/{Uri.EscapeDataString(Name!)}");
+        }
     }
 
     private void NavigateToInsertPosition()
