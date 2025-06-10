@@ -136,7 +136,7 @@ namespace AzDeltaKVT.Services
                 Chromosome = request.Chromosome,
                 Start = 0,
                 Stop = request.Stop,
-                UserInfo = request.UserInfo
+                UserInfo = request.UserInfo ?? string.Empty
             };
 
             _context.Genes.Add(entity);
