@@ -9,7 +9,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(sp => new HttpClient
 {
-    BaseAddress = new Uri("https://localhost:7017/")
+    BaseAddress = new Uri("http://localhost:8080")
 });
 
 // Register ApiService

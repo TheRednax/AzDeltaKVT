@@ -3,6 +3,7 @@ using AzDeltaKVT.Core;
 using AzDeltaKVT.Dto.Requests;
 using AzDeltaKVT.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,12 +37,30 @@ var app = builder.Build();
 
 //Set seed to true to seed the database with initial data
 //Don't forget to set it to false after the first run to duplicates
+
 using var scope = app.Services.CreateScope();
 var context = scope.ServiceProvider.GetRequiredService<AzDeltaKVTDbContext>();
 
+var maxRetries = 10;
+var delay = TimeSpan.FromSeconds(5);
+
+for (int i = 0; i < maxRetries; i++)
+{
+    try
+    {
+        context.Database.CanConnect();
+        break;
+    }
+    catch (Exception ex) when (i < maxRetries - 1)
+    {
+        //logger.LogWarning($"Database not ready, attempt {i + 1}/{maxRetries}. Waiting {delay.TotalSeconds}s...");
+        await Task.Delay(delay);
+    }
+}
+
 try
 {
-    context.Database.Migrate();
+    context.Database.EnsureCreated();
 
     if (!context.Genes.Any())
     {

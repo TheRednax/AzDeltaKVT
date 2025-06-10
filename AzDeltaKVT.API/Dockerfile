@@ -23,8 +23,5 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
-COPY wait-for-sql.sh /app/wait-for-sql.sh
-RUN chmod +x /app/wait-for-sql.sh
-
-ENTRYPOINT ["/app/wait-for-sql.sh", "sqlserver", "dotnet", "AzDeltaKVT.API.dll"]
+CMD ["dotnet", "AzDeltaKVT.API.dll"]
 
