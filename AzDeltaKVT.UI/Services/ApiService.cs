@@ -263,6 +263,7 @@ namespace AzDeltaKVT.UI.Services
             }
             return new List<GeneResult>();
         }
+
         public async Task<UploadResult> UploadFileAsync(IBrowserFile file)
         {
 	        if (file == null)
@@ -273,7 +274,9 @@ namespace AzDeltaKVT.UI.Services
 	        using var content = new MultipartFormDataContent();
 	        using var stream = file.OpenReadStream(maxAllowedSize);
 	        var streamContent = new StreamContent(stream);
-	        var mediaType = string.IsNullOrWhiteSpace(file.ContentType) ? "text/tab-separated-values" : file.ContentType;
+	        var mediaType = string.IsNullOrWhiteSpace(file.ContentType)
+		        ? "text/tab-separated-values"
+		        : file.ContentType;
 	        streamContent.Headers.ContentType = new MediaTypeHeaderValue(mediaType);
 
 
@@ -285,13 +288,15 @@ namespace AzDeltaKVT.UI.Services
 	        {
 		        // Optionally parse response content
 		        string result = await response.Content.ReadAsStringAsync();
-		        return JsonSerializer.Deserialize<AzDeltaKVT.Dto.Results.UploadResult>(result, _jsonOptions) ?? new AzDeltaKVT.Dto.Results.UploadResult();
+		        return JsonSerializer.Deserialize<AzDeltaKVT.Dto.Results.UploadResult>(result, _jsonOptions) ??
+		               new AzDeltaKVT.Dto.Results.UploadResult();
 	        }
 	        else
 	        {
 		        var error = await response.Content.ReadAsStringAsync();
 		        throw new Exception($"File upload failed: {error}");
 	        }
+        }
 
         public async Task<bool> CreateGeneAsync(GeneRequest request)
         {
