@@ -148,14 +148,20 @@ namespace AzDeltaKVT.Services
                 Chromosome = entity.Chromosome,
                 Start = entity.Start,
                 Stop = entity.Stop,
-                UserInfo = entity.UserInfo
+                UserInfo = entity.UserInfo,
+                IsSelect = request.IsSelect,
+                IsInHouse = request.IsInHouse,
+                IsClinical = request.IsClinical
             };
 
             var transcript = new NmTranscript
             {
                 Gene = entity,
                 GeneId = entity.Name,
-                NmNumber = request.Nm_Number
+                NmNumber = request.Nm_Number,
+                IsSelect = request.IsSelect,
+                IsInHouse = request.IsInHouse,
+                IsClinical = request.IsClinical
             };
 
             _context.NmTranscripts.Add(transcript);
