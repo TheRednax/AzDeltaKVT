@@ -466,5 +466,59 @@ namespace AzDeltaKVT.UI.Services
                 throw new Exception($"Failed to remove transcript: {error}");
             }
         }
+
+
+        public async Task<bool> UpdatePosition(GeneVariantRequest request)
+        {
+            Console.WriteLine($"UpdatePosition called with: NmId={request.NmId}, VariantId={request.VariantId}");
+
+            var json = JsonSerializer.Serialize(request, _jsonOptions);
+            Console.WriteLine($"Update Position Request JSON: {json}");
+
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PutAsync("/variants/update", content);
+            Console.WriteLine($"Update Position Response status: {response.StatusCode}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Position updated successfully");
+                return true;
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Update Position API Error: {response.StatusCode} - {error}");
+                throw new Exception($"Failed to update position: {error}");
+            }
+        }
+
+
+        public async Task<bool> CreatePosition(GeneVariantRequest request)
+        {
+            Console.WriteLine($"CreatePosition called with: NmId={request.NmId}, VariantId={request.VariantId}");
+
+            var json = JsonSerializer.Serialize(request, _jsonOptions);
+            Console.WriteLine($"Create Position Request JSON: {json}");
+
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync("/genevariants/create", content);
+            Console.WriteLine($"Create Position Response status: {response.StatusCode}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Position created successfully");
+                return true;
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Create Position API Error: {response.StatusCode} - {error}");
+                throw new Exception($"Failed to create position: {error}");
+            }
+        }
+
+
     }
 }
