@@ -18,7 +18,7 @@ namespace AzDeltaKVT.Services
         public async Task<IList<GeneResult>> Find()
         {
             var genes = await _context.Genes
-                .OrderBy(g => g.Name) // Sort genes alphabetically
+                .OrderBy(g => g.Name)
                 .ToListAsync();
 
             var results = new List<GeneResult>();
@@ -30,13 +30,19 @@ namespace AzDeltaKVT.Services
                     .Where(t => t.GeneId == gene.Name)
                     .ToListAsync();
 
-                // Sort transcripts: InHouse > Select > Clinical > Alphabetical
                 var sortedTranscripts = nmTranscripts
                     .OrderByDescending(t => t.IsInHouse)
                     .ThenByDescending(t => t.IsSelect)
                     .ThenByDescending(t => t.IsClinical)
                     .ThenBy(t => t.NmNumber)
                     .ToList();
+
+                // 🔧 NEW: Fetch variants for this gene
+                var variants = await _context.Variants
+                    .Where(v => v.Chromosome == gene.Chromosome &&
+                                v.Position >= gene.Start &&
+                                v.Position <= gene.Stop)
+                    .ToListAsync();
 
                 results.Add(new GeneResult
                 {
@@ -45,7 +51,8 @@ namespace AzDeltaKVT.Services
                     Start = gene.Start,
                     Stop = gene.Stop,
                     UserInfo = gene.UserInfo,
-                    NmNumbers = sortedTranscripts
+                    NmNumbers = sortedTranscripts,
+                    Variants = variants
                 });
             }
 
