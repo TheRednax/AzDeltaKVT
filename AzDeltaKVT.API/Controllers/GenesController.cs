@@ -50,7 +50,24 @@ namespace AzDeltaKVT.API.Controllers
             var existingGene = await _geneService.GetByName(request.Name);
             if (existingGene != null)
             {
-                return BadRequest(new { message = "Gene with this name already exists." });
+
+	            if (transcript != null)
+	            {
+					return BadRequest(new { message = "This combination of Transcript number and Gene name already exists." });
+				}
+
+	            var requestTranscript = new NmTranscript
+	            {
+		            GeneId = request.Name, IsInHouse = request.IsInHouse, IsClinical = request.IsClinical,
+		            IsSelect = request.IsSelect, NmNumber = request.Nm_Number
+	            };
+	            var createdTranscript = await _transcriptService.Create(requestTranscript);
+				var geneResult = await _geneService.Get(new GeneRequest
+				{
+					Name = request.Name,
+					Nm_Number = request.Nm_Number,
+				});
+				return Ok(geneResult);
             }
 
             var createdGene = await _geneService.Create(request);

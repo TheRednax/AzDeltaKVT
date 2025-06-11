@@ -1,10 +1,11 @@
-﻿using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
-using Microsoft.AspNetCore.Components.Forms;
+﻿using AzDektaKVT.Model;
 using AzDeltaKVT.Dto.Requests;
 using AzDeltaKVT.Dto.Results;
-using AzDektaKVT.Model;
+using Microsoft.AspNetCore.Components.Forms;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 using System.Xml.Linq;
 
 namespace AzDeltaKVT.UI.Services
@@ -383,9 +384,9 @@ namespace AzDeltaKVT.UI.Services
                     throw new Exception("Failed to create gene: transcript already exists, please choose a new transcript number");
                 }
                 // Check voor gene naam duplicate
-                else if (error.Contains("Gene with this name already exists"))
+                else if (error.Contains("combination of Transcript number and Gene name"))
                 {
-                    throw new Exception("Failed to create gene: a gene with this name already exists, please choose a different name");
+                    throw new Exception("Failed to create gene: This combination of Transcript number and Gene name already exists,please choose a new transcript number or gene name");
                 }
                 else
                 {
@@ -450,16 +451,8 @@ namespace AzDeltaKVT.UI.Services
         {
             Console.WriteLine($"RemoveTranscriptAsync called with: {nmNumber}");
 
-            var transcriptRequest = new NmTranscript { NmNumber = nmNumber };
-            var json = JsonSerializer.Serialize(transcriptRequest, _jsonOptions);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var request = new HttpRequestMessage(HttpMethod.Delete, "/transcripts/delete")
-            {
-                Content = content
-            };
-
-            var response = await _httpClient.SendAsync(request);
+            var route = $"/Transcripts/{nmNumber}";
+            var response = await _httpClient.DeleteAsync(route);
             Console.WriteLine($"Remove Transcript Response status: {response.StatusCode}");
 
             if (response.IsSuccessStatusCode)
