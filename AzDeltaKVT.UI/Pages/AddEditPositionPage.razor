@@ -112,19 +112,18 @@
             {
                 NmId = nmNumber,
                 VariantId = 0,
-                NmTranscript = new NmTranscript
-                {
-                },
                 Variant = new Variant
                 {
                     VariantId = 0,
                     Chromosome = chromosome,
                     Position = int.TryParse(position, out var posVal) ? posVal : 0,
                     Reference = reference,
-                    Alternative = alternative
+                    Alternative = alternative,
+                    UserInfo = "standarduser" // ✅ Toegevoegd
                 },
                 BiologicalEffect = biologicalEffect,
                 Classification = classification,
+                UserInfo = "standarduser" // ✅ Toegevoegd
             };
 
         if (isEdit)
@@ -138,6 +137,7 @@
 
         Navigation.NavigateTo("/");
     }
+
 
 
 }

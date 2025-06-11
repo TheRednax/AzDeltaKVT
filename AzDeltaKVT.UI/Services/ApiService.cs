@@ -505,26 +505,66 @@ namespace AzDeltaKVT.UI.Services
         {
             Console.WriteLine($"CreatePosition called with: NmId={request.NmId}, VariantId={request.VariantId}");
 
+            // 1️⃣ Zoek genen op voor NmId
+            var genes = await SearchGenesAsync(nmNumber: request.NmId);
+            if (genes == null || !genes.Any())
+            {
+                throw new Exception($"Geen gen gevonden voor NM number {request.NmId}");
+            }
+
+            var gene = genes.First();
+
+            // 2️⃣ Haal juiste transcript op
+            var transcripts = GetTranscriptsFromGene(gene);
+            var selectedTranscript = transcripts.FirstOrDefault(t => t.NmNumber == request.NmId);
+            if (selectedTranscript == null)
+            {
+                throw new Exception($"Geen transcript gevonden voor NM number {request.NmId}");
+            }
+
+            // 3️⃣ Bouw de volledige NmTranscript (model) op, inclusief Gene-object
+            var transcriptModel = new NmTranscript
+            {
+                NmNumber = selectedTranscript.NmNumber,
+                GeneId = selectedTranscript.GeneId,
+                IsSelect = selectedTranscript.IsSelect,
+                IsClinical = selectedTranscript.IsClinical,
+                IsInHouse = selectedTranscript.IsInHouse,
+                Gene = new Gene
+                {
+                    Name = gene.Name,
+                    Chromosome = gene.Chromosome,
+                    Start = gene.Start,
+                    Stop = gene.Stop,
+                    UserInfo = gene.UserInfo
+                }
+            };
+
+            // 4️⃣ Voeg het correcte transcript toe aan het request
+            request.NmTranscript = transcriptModel;
+
+            // 5️⃣ Serialiseer en verzend
             var json = JsonSerializer.Serialize(request, _jsonOptions);
             Console.WriteLine($"Create Position Request JSON: {json}");
 
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-
             var response = await _httpClient.PostAsync("/genevariants/create", content);
+
             Console.WriteLine($"Create Position Response status: {response.StatusCode}");
 
             if (response.IsSuccessStatusCode)
             {
-                Console.WriteLine("Position created successfully");
+                Console.WriteLine("Position succesvol aangemaakt");
                 return true;
             }
             else
             {
                 var error = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Create Position API Error: {response.StatusCode} - {error}");
-                throw new Exception($"Failed to create position: {error}");
+                Console.WriteLine($"API Error: {response.StatusCode} - {error}");
+                throw new Exception($"Aanmaken mislukt: {error}");
             }
         }
+
 
 
     }
