@@ -226,7 +226,7 @@
         
         if (searchTerm.StartsWith("NM_", StringComparison.OrdinalIgnoreCase))
         {
-            Navigation.NavigateTo($"/gene-results?nm={Uri.EscapeDataString(searchTerm)}");
+			Navigation.NavigateTo($"/gene-results?nm={Uri.EscapeDataString(searchTerm)}");
         }
         else
         {
