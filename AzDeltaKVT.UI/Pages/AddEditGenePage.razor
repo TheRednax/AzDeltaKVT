@@ -8,10 +8,12 @@
 @inject ApiService Api
 @inject NavigationManager Navigation
 
-<PageTitle>@(IsEditMode ? "Edit Gene" : "Add New Gene")</PageTitle>
+<PageTitle>@(IsEditMode ? "Edit Gene" : IsAddingTranscriptMode ? "Add Transcript" : "Add New Gene")</PageTitle>
+
+
 
 <div class="container py-4">
-    <h1 class="h3 text-main mb-4"><strong>@(IsEditMode ? "Edit Gene" : "Add New Gene")</strong></h1>
+	<h1 class="h3 text-main mb-4"><strong>@(IsEditMode ? "Edit Gene" : IsAddingTranscriptMode ? "Add Transcript" : "Add New Gene")</strong></h1>
 
     @if (isLoading)
     {
@@ -29,9 +31,10 @@
         <div class="row g-3">
             <div class="col-md-6">
                 <label class="form-label fw-semibold text-main">Name:</label>
-                <input type="text" @bind="geneName" disabled="@IsEditMode" 
-                       class="form-control @(IsEditMode ? "bg-light" : "")" />
-                @if (IsEditMode) { <small class="text-muted">INSERT ONLY</small> }
+                <input type="text" @bind="geneName" disabled="@((IsEditMode || IsAddingTranscriptMode))" 
+                       class="form-control @((IsEditMode || IsAddingTranscriptMode) ? "bg-light" : "")" />
+                @if ((IsEditMode || IsAddingTranscriptMode)) { <small class="text-muted">INSERT ONLY</small> }
+
             </div>
 
             <div class="col-md-6">
@@ -64,23 +67,23 @@
 
             <div class="col-md-4">
                 <label class="form-label fw-semibold text-main">Chromosome:</label>
-                <input type="text" @bind="chromosome" disabled="@IsEditMode" 
-                       class="form-control @(IsEditMode ? "bg-light" : "")" />
-                @if (IsEditMode) { <small class="text-muted">INSERT ONLY</small> }
+                <input type="text" @bind="chromosome" disabled="@(IsEditMode || IsAddingTranscriptMode)" 
+                       class="form-control @((IsEditMode || IsAddingTranscriptMode) ? "bg-light" : "")" />
+                @if (IsEditMode || IsAddingTranscriptMode) { <small class="text-muted">INSERT ONLY</small> }
             </div>
 
             <div class="col-md-4">
                 <label class="form-label fw-semibold text-main">Start:</label>
-                <input type="number" @bind="start" disabled="@IsEditMode" 
-                       class="form-control @(IsEditMode ? "bg-light" : "")" />
-                @if (IsEditMode) { <small class="text-muted">INSERT ONLY</small> }
+                <input type="number" @bind="start" disabled="@(IsEditMode || IsAddingTranscriptMode)" 
+                       class="form-control @((IsEditMode || IsAddingTranscriptMode) ? "bg-light" : "")" />
+                @if (IsEditMode || IsAddingTranscriptMode) { <small class="text-muted">INSERT ONLY</small> }
             </div>
 
             <div class="col-md-4">
                 <label class="form-label fw-semibold text-main">Stop:</label>
-                <input type="number" @bind="stop" disabled="@IsEditMode" 
-                       class="form-control @(IsEditMode ? "bg-light" : "")" />
-                @if (IsEditMode) { <small class="text-muted">INSERT ONLY</small> }
+                <input type="number" @bind="stop" disabled="@(IsEditMode || IsAddingTranscriptMode)" 
+                       class="form-control @((IsEditMode || IsAddingTranscriptMode) ? "bg-light" : "")" />
+                @if ((IsEditMode || IsAddingTranscriptMode)) { <small class="text-muted">INSERT ONLY</small> }
             </div>
 
             <div class="col-12">
@@ -137,8 +140,9 @@
     [Parameter] public string? GeneName { get; set; }
     [Parameter] public string? NmNumber { get; set; }
 
-    private bool IsEditMode => !string.IsNullOrEmpty(GeneName);
-    
+    private bool IsEditMode => !string.IsNullOrEmpty(GeneName) && !string.IsNullOrEmpty(NmNumber);
+    private bool IsAddingTranscriptMode => !string.IsNullOrEmpty(GeneName) && string.IsNullOrEmpty(NmNumber);
+
     private bool isLoading = false;
     private bool isSaving = false;
     private bool isRemoving = false;
@@ -164,7 +168,20 @@
         {
             await LoadData();
         }
-    }
+        else if (IsAddingTranscriptMode)
+        {
+            var genes = await Api.SearchGenesAsync(name: GeneName);
+            originalGene = genes?.FirstOrDefault();
+
+            if (originalGene != null)
+            {
+	            geneName = originalGene.Name;
+	            start = originalGene.Start;
+	            stop = originalGene.Stop;
+	            chromosome = originalGene.Chromosome;
+            }
+        }
+        }
 
     private async Task LoadData()
     {
