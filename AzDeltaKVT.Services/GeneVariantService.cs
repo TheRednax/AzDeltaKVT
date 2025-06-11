@@ -20,12 +20,17 @@ namespace AzDeltaKVT.Services
 
         public async Task<IList<GeneVariant>> Find()
         {
-            return await _context.GeneVariants.ToListAsync();
+            return await _context.GeneVariants
+                .Include(gv => gv.Variant)
+                .Include(gv => gv.NmTranscript)
+                .ToListAsync();
         }
 
         public async Task<GeneVariant?> Get(string nmId, int variantId)
         {
             return await _context.GeneVariants
+                .Include(gv => gv.Variant)
+                .Include(gv => gv.NmTranscript)
                 .FirstOrDefaultAsync(gv => gv.NmId == nmId && gv.VariantId == variantId);
         }
 

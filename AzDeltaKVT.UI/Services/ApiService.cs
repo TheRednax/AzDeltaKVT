@@ -133,36 +133,35 @@ namespace AzDeltaKVT.UI.Services
             return new List<VariantResult>();
         }
 
-        public async Task<List<VariantResult>> GetPositionsFromNm(string? Nm = null)
+        public async Task<List<GeneVariantResult>> GetAllGeneVariantsAsync()
         {
-            if (string.IsNullOrWhiteSpace(Nm))
-                return new List<VariantResult>();
-
-            // 1. Zoek genen op basis van Nm
-            var genes = await SearchGenesAsync(nmNumber: Nm);
-            if (genes == null || !genes.Any())
-                return new List<VariantResult>();
-
-            var gene = genes.First();
-
-            // 2. Haal alle gene variants op
-            var allGeneVariants = await GetGeneVariantsAsync();
-
-            // 3. Pak de eerste matching variant (op NmId)
-            var matchingVariant = allGeneVariants
-                .FirstOrDefault(v =>
-                    v.NmId?.Equals(Nm, StringComparison.OrdinalIgnoreCase) == true
-                );
-
-            if (matchingVariant == null)
-                return new List<VariantResult>();
-
-            // 4. Gebruik de VariantId om de echte variant info op te halen
-            var variantResults = await SearchVariantsAsync(variantId: matchingVariant.VariantId);
-
-            return variantResults;
+            var response = await _httpClient.GetAsync("/genevariants");
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"GetAllGeneVariants API Response: {json}"); // Debug log
+                return JsonSerializer.Deserialize<List<GeneVariantResult>>(json, _jsonOptions) ?? new List<GeneVariantResult>();
+            }
+            return new List<GeneVariantResult>();
         }
 
+        public async Task<List<GeneVariantResult>> GetPositionsFromNm(string? Nm = null)
+        {
+            var allVariants = await GetAllGeneVariantsAsync();
+
+            var filtered = allVariants
+                .Where(gv => string.IsNullOrEmpty(Nm) || gv.NmId == Nm)
+                .ToList();
+
+            Console.WriteLine($"Filtered GeneVariants for Nm '{Nm}':");
+
+            foreach (var gv in filtered)
+            {
+                Console.WriteLine($"- NmId: {gv.NmId}, VariantId: {gv.VariantId}");
+            }
+
+            return filtered;
+        }
 
 
 
