@@ -30,15 +30,15 @@
             <h1 class="h3 text-main mb-4"><strong>Gene page</strong></h1>
 
             <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
-	            <h1 class="h5 text-main m-0">Gene details</h1>
-	            <div>
-					<button type="button" @onclick="NavigateToAddTranscript" class="btn btn-main">
-						Add Transcript
-					</button>
-					<button type="button" @onclick="NavigateToEditGene" class="btn btn-main">
-						Edit Gene
-					</button>
-	            </div>
+                <h1 class="h5 text-main m-0">Gene details</h1>
+                <div>
+                    <button type="button" @onclick="NavigateToAddTranscript" class="btn btn-main">
+                        Add Transcript
+                    </button>
+                    <button type="button" @onclick="NavigateToEditGene" class="btn btn-main">
+                        Edit Gene
+                    </button>
+                </div>
             </div>
             <div class="table-responsive">
                 <table class="table table-bordered align-middle">
@@ -67,18 +67,17 @@
             </div>
         </section>
 
-
         <!-- Known Positions Section -->
         <section class="mb-5">
-            @if (positions != null && positions.Any())
-            {
-                <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
-                    <h1 class="h5 text-main m-0">Gene positions</h1>
-                    <button type="button" @onclick="NavigateToInsertPosition" class="btn btn-main">
-                        Insert Position
-                    </button>
-                </div>
+            <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+                <h1 class="h5 text-main m-0">Gene positions</h1>
+                <button type="button" @onclick="NavigateToInsertPosition" class="btn btn-main">
+                    Insert Position
+                </button>
+            </div>
 
+            @if (geneVariants != null && geneVariants.Any())
+            {
                 <div class="table-responsive">
                     <table class="table table-bordered align-middle">
                         <thead class="table-light">
@@ -87,37 +86,31 @@
                                 <th>Position</th>
                                 <th>Reference</th>
                                 <th>Alternative</th>
-                                @if (geneVariants.Any())
-                                {
-                                    <th>Biological Effect</th>
-                                    <th>Classification</th>
-                                }
+                                <th>Biological Effect</th>
+                                <th>Classification</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var position in positions)
+                            @foreach (var gv in geneVariants)
                             {
-                                var geneVariant = geneVariants.FirstOrDefault(gv => gv.VariantId == position.VariantId);
+                                var variant = gv.Variant;
                                 <tr>
                                     <td>
-                                        <button type="button" @onclick="() => NavigateToPositionPage(position.VariantId)"
-                                        class="btn btn-link text-dark text-decoration-underline p-0">
-                                            @position.Chromosome
+                                        <button type="button" @onclick="() => NavigateToPositionPage(variant.VariantId)"
+                                                class="btn btn-link text-dark text-decoration-underline p-0">
+                                            @variant.Chromosome
                                         </button>
                                     </td>
                                     <td>
-                                        <button type="button" @onclick="() => NavigateToPositionPage(position.VariantId)"
-                                        class="btn btn-link text-dark text-decoration-underline p-0">
-                                            @position.Position
+                                        <button type="button" @onclick="() => NavigateToPositionPage(variant.VariantId)"
+                                                class="btn btn-link text-dark text-decoration-underline p-0">
+                                            @variant.Position
                                         </button>
                                     </td>
-                                    <td>@position.Reference</td>
-                                    <td>@position.Alternative</td>
-                                    @if (geneVariants.Any())
-                                    {
-                                        <td>@(geneVariant?.BiologicalEffect ?? "-")</td>
-                                        <td>@(geneVariant?.Classification ?? "-")</td>
-                                    }
+                                    <td>@variant.Reference</td>
+                                    <td>@variant.Alternative</td>
+                                    <td>@(gv.BiologicalEffect ?? "-")</td>
+                                    <td>@(gv.Classification ?? "-")</td>
                                 </tr>
                             }
                         </tbody>
@@ -149,10 +142,10 @@
     private bool hasError = false;
     private string errorMessage = "";
 
-    // Updated to use DTO types
     private GeneResult? currentGene;
     private NmTranscriptResult? currentTranscript;
-    private List<VariantResult> positions = new();
+
+    // Eén lijst met alles wat je nodig hebt: GeneVariants inclusief Variant info (positie etc)
     private List<GeneVariantResult> geneVariants = new();
 
     protected override async Task OnInitializedAsync()
@@ -181,19 +174,14 @@
 
         try
         {
-            // Load transcript first if NM number provided (may contain gene info)
             if (!string.IsNullOrEmpty(Nm))
             {
                 await LoadTranscript();
             }
 
-            // Load gene information (either by name or from transcript)
             await LoadGene();
 
-            // Load positions for this gene
-            await LoadPositions();
-
-            // Load gene variants for additional info
+            // Haal nu alle GeneVariants op die horen bij dit Nm nummer (transcript)
             await LoadGeneVariants();
         }
         catch (Exception ex)
@@ -209,7 +197,6 @@
 
     private async Task LoadGene()
     {
-        // Only load if we don't have gene data yet
         if (currentGene == null)
         {
             currentGene = await Api.GetGeneByNameAsync(Name!);
@@ -226,58 +213,51 @@
         if (string.IsNullOrEmpty(Nm)) return;
         currentTranscript = await Api.GetTranscriptAsync(Nm);
 
-        // If we got transcript but no gene yet, get the full gene data
         if (currentTranscript?.Gene != null && currentGene == null)
         {
             currentGene = await Api.GetGeneByNameAsync(currentTranscript.Gene.Name);
         }
     }
 
-    private async Task LoadPositions()
-    {
-        if (Nm == null) return;
-
-        else{
-            var NmPositions = await Api.GetPositionsFromNm(Nm);
-
-            positions = NmPositions;
-        }
-    }
-
     private async Task LoadGeneVariants()
     {
-        geneVariants = await Api.GetGeneVariantsForVariantsAsync(positions);
+        if (string.IsNullOrEmpty(Nm))
+        {
+            geneVariants = new List<GeneVariantResult>();
+            return;
+        }
+
+        // Haal alle gene variants op via de API, gefilterd op NmId (jouw API doet dat)
+        geneVariants = await Api.GetPositionsFromNm(Nm);
     }
 
     private void NavigateToPositionPage(int variantId)
-    {        
-        var variant = positions.FirstOrDefault(v => v.VariantId == variantId);
+    {
+        var variant = geneVariants.FirstOrDefault(gv => gv.Variant?.VariantId == variantId)?.Variant;
 
         if (variant != null && variant.Position.HasValue)
         {
             Navigation.NavigateTo($"/position/{Uri.EscapeDataString(variant.Chromosome!)}/{variant.Position}");
         }
         else
-        {            
+        {
             Navigation.NavigateTo($"/position?id={variantId}");
         }
     }
 
     private void NavigateToAddTranscript()
     {
-	    Navigation.NavigateTo($"/gene/edit/{Uri.EscapeDataString(Name!)}");
+        Navigation.NavigateTo($"/gene/edit/{Uri.EscapeDataString(Name!)}");
     }
 
     private void NavigateToEditGene()
     {
         if (!string.IsNullOrEmpty(Nm))
         {
-            // Edit specific transcript
             Navigation.NavigateTo($"/gene/edit/{Uri.EscapeDataString(Name!)}/{Uri.EscapeDataString(Nm)}");
         }
         else
         {
-            // Edit gene (first transcript)
             Navigation.NavigateTo($"/gene/edit/{Uri.EscapeDataString(Name!)}");
         }
     }
