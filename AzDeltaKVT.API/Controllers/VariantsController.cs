@@ -55,5 +55,24 @@ namespace AzDeltaKVT.API.Controllers
             var deleted = await _variantService.Delete(id);
             return Ok(deleted);
         }
+
+        // CREATE meerdere variants op 1 Transcript
+        [HttpPost("add-to-transcript/{nmNumber}")]
+        public async Task<IActionResult> AddVariantToTranscript(string nmNumber, [FromBody] AddVariantToTranscriptRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var result = await _variantService.AddVariantToTranscript(nmNumber, request);
+                return Created($"/variants/{result.GeneVariant.VariantId}", result);
+            }
+            catch (ArgumentException ex)
+            {
+                return Conflict(ex.Message);
+            }
+        }
+
     }
 }

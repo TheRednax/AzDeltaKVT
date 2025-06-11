@@ -8,7 +8,7 @@ using AzDektaKVT.Model;
 
 namespace AzDeltaKVT.Dto.Results
 {
-	public class NmTranscriptResult
+    public class NmTranscriptResult
     {
         public string NmNumber { get; set; }
 
@@ -19,5 +19,6 @@ namespace AzDeltaKVT.Dto.Results
         public bool IsSelect { get; set; }
         public bool IsClinical { get; set; }
         public bool IsInHouse { get; set; }
+        public List<GeneVariantResult>? GeneVariants { get; set; } = new();
     }
 }
