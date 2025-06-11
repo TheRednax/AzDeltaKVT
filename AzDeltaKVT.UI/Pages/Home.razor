@@ -19,7 +19,7 @@
                 <label class="form-label fw-semibold text-main">Gene:</label>
                 <input type="text" @bind="geneSearchTerm" @bind:event="oninput"
                        @onkeydown="@(async (e) => await HandleGeneKeyDown(e))"
-                       class="form-control" placeholder="Enter gene here" />
+                       class="form-control" placeholder="Enter a gene name or NM number here (example: name: KIT / number: NM_000222.2)" />
 				<div style="min-height: 20px;">
 					@if (!string.IsNullOrEmpty(geneErrorMessage))
 					{
@@ -42,13 +42,13 @@
                 <label class="form-label fw-semibold text-main">Chromosome:</label>
                 <input type="text" @bind="chromosomeSearchTerm" @bind:event="oninput"
                        @onkeydown="@(async (e) => await HandlePositionKeyDown(e))"
-                       class="form-control" placeholder="Enter chromosome here" />
+                       class="form-control" placeholder="Enter chromosome here (example: 4)" />
             </div>
             <div class="col-md-5">
                 <label class="form-label fw-semibold text-main">Position:</label>
                 <input type="text" @bind="positionSearchTerm" @bind:event="oninput"
                        @onkeydown="@(async (e) => await HandlePositionKeyDown(e))"
-                       class="form-control" placeholder="Enter position here" />
+                       class="form-control" placeholder="Enter position here (example: 55525000)" />
 				<div style="min-height: 20px;">
 					@if (!string.IsNullOrEmpty(positionErrorMessage))
 					{
