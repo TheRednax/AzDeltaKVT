@@ -224,5 +224,10 @@ namespace AzDeltaKVT.Services
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<Gene> GetByName(string name)
+        {
+            return await _context.Genes.FirstOrDefaultAsync(g => g.Name == name);
+        }
     }
 }

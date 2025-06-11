@@ -42,13 +42,20 @@ namespace AzDeltaKVT.API.Controllers
 		public async Task<IActionResult> Create([FromBody] GeneRequest request)
 		{
 			var transcript = await _transcriptService.Get(request.Nm_Number);
-			if (transcript == null)
-			{
-				var createdGene = await _geneService.Create(request);
-				return Ok(createdGene);
-			}
-			return BadRequest(new { message = "Transcript already exists for this NM number." });
-		}
+            if (transcript != null)
+            {
+                return BadRequest(new { message = "Transcript already exists for this NM number." });
+            }
+
+            var existingGene = await _geneService.GetByName(request.Name);
+            if (existingGene != null)
+            {
+                return BadRequest(new { message = "Gene with this name already exists." });
+            }
+
+            var createdGene = await _geneService.Create(request);
+            return Ok(createdGene);
+        }
 
 		// PUT /genes/update
 		[HttpPut("update")]
