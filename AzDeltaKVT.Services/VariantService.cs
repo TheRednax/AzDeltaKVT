@@ -11,7 +11,7 @@ namespace AzDeltaKVT.Services
 {
     public class VariantService
     {
-        private readonly AzDeltaKVTDbContext _context;
+        private readonly AzDeltaKVTDbContext _context;       
 
         public VariantService(AzDeltaKVTDbContext context)
         {
@@ -128,5 +128,83 @@ namespace AzDeltaKVT.Services
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<AddVariantToTranscriptResult> AddVariantToTranscript(string nmNumber, AddVariantToTranscriptRequest request)
+        {
+            // 1. Check transcript exists
+            var transcript = await _context.NmTranscripts
+                .Include(t => t.Gene)
+                .FirstOrDefaultAsync(t => t.NmNumber == nmNumber);
+            if (transcript == null)
+                throw new ArgumentException($"Transcript {nmNumber} not found");
+
+            // 2. Check/Create variant
+            var existingVariant = await _context.Variants
+                .FirstOrDefaultAsync(v =>
+                    v.Chromosome == request.Chromosome &&
+                    v.Position == request.Position &&
+                    v.Alternative == request.Alternative);
+
+            int variantId;
+            bool variantWasCreated = false;
+
+            if (existingVariant != null)
+            {
+                variantId = existingVariant.VariantId;
+            }
+            else
+            {
+                var newVariant = new Variant
+                {
+                    Chromosome = request.Chromosome,
+                    Position = request.Position,
+                    Alternative = request.Alternative,
+                    Reference = request.Reference,
+                    UserInfo = request.UserInfo ?? string.Empty
+                };
+                _context.Variants.Add(newVariant);
+                await _context.SaveChangesAsync();
+                variantId = newVariant.VariantId;
+                variantWasCreated = true;
+            }
+
+            // 3. Check existing GeneVariant
+            var existingGeneVariant = await _context.GeneVariants
+                .FirstOrDefaultAsync(gv => gv.NmId == nmNumber && gv.VariantId == variantId);
+
+            if (existingGeneVariant != null)
+                throw new ArgumentException($"This variant is already linked to transcript {nmNumber}");
+
+            // 4. Create GeneVariant directly (like Get method pattern)
+            var geneVariant = new GeneVariant
+            {
+                NmId = nmNumber,
+                VariantId = variantId,
+                BiologicalEffect = request.BiologicalEffect,
+                Classification = request.Classification,
+                UserInfo = request.UserInfo ?? string.Empty
+            };
+
+            _context.GeneVariants.Add(geneVariant);
+            await _context.SaveChangesAsync();
+
+            // 5. Return simple result (like Get method pattern)
+            return new AddVariantToTranscriptResult
+            {
+                VariantWasCreated = variantWasCreated,
+                GeneVariant = new GeneVariantResult
+                {
+                    NmId = geneVariant.NmId,
+                    VariantId = geneVariant.VariantId,
+                    BiologicalEffect = geneVariant.BiologicalEffect,
+                    Classification = geneVariant.Classification,
+                    UserInfo = geneVariant.UserInfo
+                },
+                Message = variantWasCreated
+                    ? "New variant created and linked to transcript"
+                    : "Existing variant linked to transcript"
+            };
+        }
     }
 }
+

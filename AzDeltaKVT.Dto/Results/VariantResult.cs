@@ -8,7 +8,7 @@ using AzDeltaKVT.Dto.Results;
 
 namespace AzDeltaKVT.Dto.Results
 {
-	public class VariantResult : Variant
+    public class VariantResult : Variant
     {
         public int VariantId { get; set; }
         public string Chromosome { get; set; }
