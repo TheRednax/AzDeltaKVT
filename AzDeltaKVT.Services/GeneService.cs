@@ -6,259 +6,227 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AzDeltaKVT.Services
 {
-	public class GeneService
-	{
-		private readonly AzDeltaKVTDbContext _context;
+    public class GeneService
+    {
+        private readonly AzDeltaKVTDbContext _context;
 
-		public GeneService(AzDeltaKVTDbContext context)
-		{
-			_context = context;
-		}
+        public GeneService(AzDeltaKVTDbContext context)
+        {
+            _context = context;
+        }
 
-		public async Task<IList<GeneResult>> Find()
-		{
-			var genes = await _context.Genes
-				.OrderBy(g => g.Name) // Sort genes alphabetically
-				.ToListAsync();
+        public async Task<IList<GeneResult>> Find()
+        {
+            var genes = await _context.Genes.OrderBy(g => g.Name).ToListAsync();
+            var results = new List<GeneResult>();
 
-			var results = new List<GeneResult>();
+            foreach (var gene in genes)
+            {
+                var transcripts = await GetSortedTranscriptsByGeneId(gene.Name);
+                var variants = await GetVariantsForGene(gene);
 
-			foreach (var gene in genes)
-			{
-				// Fetch related transcripts
-				var nmTranscripts = await _context.NmTranscripts
-					.Where(t => t.GeneId == gene.Name)
-					.ToListAsync();
+                results.Add(BuildGeneResult(gene, transcripts, variants));
+            }
 
-				// Sort transcripts: InHouse > Select > Clinical > Alphabetical
-				var sortedTranscripts = nmTranscripts
-					.OrderByDescending(t => t.IsInHouse)
-					.ThenByDescending(t => t.IsSelect)
-					.ThenByDescending(t => t.IsClinical)
-					.ThenBy(t => t.NmNumber)
-					.ToList();
+            return results;
+        }
 
-				var variants = await _context.Variants
-					.Where(v => v.Chromosome == gene.Chromosome &&
-					            v.Position >= gene.Start &&
-					            v.Position <= gene.Stop)
-					.ToListAsync();
+        public async Task<IList<GeneResult>> Get(GeneRequest request)
+        {
+            var genes = await FilterGenes(request);
+            if (!genes.Any()) return new List<GeneResult>();
 
-				results.Add(new GeneResult
-				{
-					Name = gene.Name,
-					Chromosome = gene.Chromosome,
-					Start = gene.Start,
-					Stop = gene.Stop,
-					UserInfo = gene.UserInfo,
-					NmNumbers = sortedTranscripts,
-					Variants = variants
-				});
-			}
+            var results = new List<GeneResult>();
+            foreach (var gene in genes)
+            {
+                var transcripts = await GetRelevantTranscripts(gene, request);
+                var variants = await GetRelevantVariants(gene, request);
 
-			return results;
-		}
+                results.Add(BuildGeneResult(gene, transcripts, variants));
+            }
 
-		public async Task<IList<GeneResult>> Get(GeneRequest request)
-		{
-			IQueryable<Gene> query = _context.Genes;
+            return results;
+        }
 
-			// Apply filters
-			if (!string.IsNullOrEmpty(request.Name))
-			{
-				query = query.Where(g => g.Name.Contains(request.Name));
-			}
-			else if (!string.IsNullOrEmpty(request.Nm_Number))
-			{
-				var geneId = await _context.NmTranscripts
-					.Where(t => t.NmNumber.ToLower() == request.Nm_Number.ToLower())
-					.Select(t => t.GeneId)
-					.FirstOrDefaultAsync();
+        public async Task<GeneResult> Create(GeneRequest request)
+        {
+            var gene = new Gene
+            {
+                Name = request.Name,
+                Chromosome = request.Chromosome,
+                Start = request.Start,
+                Stop = request.Stop,
+                UserInfo = request.UserInfo ?? string.Empty
+            };
 
-				if (string.IsNullOrEmpty(geneId))
-					return new List<GeneResult>();
+            _context.Genes.Add(gene);
+            await _context.SaveChangesAsync();
 
-				query = query.Where(g => g.Name == geneId);
-			}
-			else if (!string.IsNullOrEmpty(request.Chromosome) && request.Position.HasValue)
-			{
-				query = query.Where(g =>
-					g.Chromosome == request.Chromosome &&
-					g.Start <= request.Position &&
-					g.Stop >= request.Position);
-			}
-			else
-			{
-				return new List<GeneResult>();
-			}
+            var transcript = new NmTranscript
+            {
+                GeneId = gene.Name,
+                NmNumber = request.Nm_Number,
+                IsSelect = request.IsSelect,
+                IsInHouse = request.IsInHouse,
+                IsClinical = request.IsClinical
+            };
 
-			var genes = await query
-				.OrderBy(g => g.Name)
-				.ToListAsync();
+            _context.NmTranscripts.Add(transcript);
+            await _context.SaveChangesAsync();
 
-			var results = new List<GeneResult>();
+            return BuildGeneResult(gene, new List<NmTranscript> { transcript }, new List<Variant>());
+        }
 
-			foreach (var gene in genes)
-			{
-				var nmNumbers = new List<NmTranscript>();
-				if (!string.IsNullOrEmpty(request.Chromosome) && request.Position.HasValue)
-				{
-					// Get associated NM transcripts and sort them
-					nmNumbers = await _context.GeneVariants
-						.Include(gv => gv.Variant)
-						.Include(gv => gv.NmTranscript)
-						.Where(t => t.Variant.Chromosome == request.Chromosome && t.Variant.Position == request.Position)
-						.Select(gv => gv.NmTranscript)
-						.ToListAsync();
-				}
-				else if (string.IsNullOrEmpty(request.Nm_Number))
-				{
-					// Get associated NM transcripts and sort them
-					nmNumbers = await _context.NmTranscripts
-						.Where(t => t.GeneId == gene.Name)
-						.ToListAsync();
-				}
-				else
-				{
-					nmNumbers = await _context.NmTranscripts
-						.Where(t => t.GeneId == gene.Name && t.NmNumber.ToLower() == request.Nm_Number.ToLower()).ToListAsync();
-				}
+        public async Task<GeneResult?> Update(GeneRequest request)
+        {
+            var gene = await _context.Genes.FindAsync(request.Name);
+            if (gene == null) return null;
 
-				var orderedNms = nmNumbers
-					.OrderByDescending(t => t.IsInHouse)
-					.ThenByDescending(t => t.IsSelect)
-					.ThenByDescending(t => t.IsClinical)
-					.ThenBy(t => t.NmNumber)
-					.ToList();
+            gene.Chromosome = request.Chromosome;
+            gene.Start = request.Start;
+            gene.Stop = request.Stop;
+            gene.UserInfo = request.UserInfo;
 
-				var variants = new List<Variant>();
+            var transcript = await _context.NmTranscripts
+                .FirstOrDefaultAsync(t => t.GeneId == request.Name && t.NmNumber == request.Nm_Number);
 
-				if (string.IsNullOrEmpty(request.Chromosome) && !request.Position.HasValue)
-				{
-					// Get variants for gene
-					variants = await _context.Variants
-						.Where(v => v.Chromosome == gene.Chromosome &&
-									v.Position >= gene.Start &&
-									v.Position <= gene.Stop)
-						.ToListAsync();
-				}
-				else
-				{
-					// Get variants for gene
-					variants = await _context.Variants
-						.Where(v => v.Chromosome == request.Chromosome &&
-									v.Position == request.Position)
-						.ToListAsync();
-				}
+            if (transcript == null) return null;
 
+            transcript.IsSelect = request.IsSelect;
+            transcript.IsInHouse = request.IsInHouse;
+            transcript.IsClinical = request.IsClinical;
 
-				// Build result
-				results.Add(new GeneResult
-				{
-					Name = gene.Name,
-					Chromosome = gene.Chromosome,
-					Start = gene.Start,
-					Stop = gene.Stop,
-					UserInfo = gene.UserInfo,
-					NmNumbers = orderedNms,
-					Variants = variants
-				});
-			}
+            await _context.SaveChangesAsync();
 
-			return results;
-		}
+            return BuildGeneResult(gene, new List<NmTranscript> { transcript }, new List<Variant>());
+        }
 
-		public async Task<GeneResult> Create(GeneRequest request)
-		{
-			var entity = new Gene
-			{
-				Name = request.Name,
-				Chromosome = request.Chromosome,
-				Start = request.Start,
-				Stop = request.Stop,
-				UserInfo = request.UserInfo ?? string.Empty
-			};
+        public async Task<bool> Delete(string name)
+        {
+            var gene = await _context.Genes.FindAsync(name);
+            if (gene == null) return false;
 
-			_context.Genes.Add(entity);
-			await _context.SaveChangesAsync();
+            _context.Genes.Remove(gene);
+            await _context.SaveChangesAsync();
+            return true;
+        }
 
-			var result = new GeneResult
-			{
-				Name = entity.Name,
-				Chromosome = entity.Chromosome,
-				Start = entity.Start,
-				Stop = entity.Stop,
-				UserInfo = entity.UserInfo,
-				IsSelect = request.IsSelect,
-				IsInHouse = request.IsInHouse,
-				IsClinical = request.IsClinical
-			};
+        public async Task<Gene?> GetByName(string name)
+        {
+            return await _context.Genes.FirstOrDefaultAsync(g => g.Name == name);
+        }
 
-			var transcript = new NmTranscript
-			{
-				Gene = entity,
-				GeneId = entity.Name,
-				NmNumber = request.Nm_Number,
-				IsSelect = request.IsSelect,
-				IsInHouse = request.IsInHouse,
-				IsClinical = request.IsClinical
-			};
+        // ---------- Private Helpers ----------
 
-			_context.NmTranscripts.Add(transcript);
-			await _context.SaveChangesAsync();
+        private async Task<IList<Gene>> FilterGenes(GeneRequest request)
+        {
+            IQueryable<Gene> query = _context.Genes;
 
-			return result;
-		}
+            if (!string.IsNullOrEmpty(request.Name))
+            {
+                query = query.Where(g => g.Name.Contains(request.Name));
+            }
+            else if (!string.IsNullOrEmpty(request.Nm_Number))
+            {
+                var geneId = await _context.NmTranscripts
+                    .Where(t => t.NmNumber.ToLower() == request.Nm_Number.ToLower())
+                    .Select(t => t.GeneId)
+                    .FirstOrDefaultAsync();
 
-		public async Task<GeneResult> Update(GeneRequest gene)
-		{
-			var existing = await _context.Genes.FindAsync(gene.Name);
-			if (existing == null) return null;
+                if (string.IsNullOrEmpty(geneId))
+                    return new List<Gene>();
 
-			existing.Chromosome = gene.Chromosome;
-			existing.Start = gene.Start;
-			existing.Stop = gene.Stop;
-			existing.UserInfo = gene.UserInfo;
+                query = query.Where(g => g.Name == geneId);
+            }
+            else if (!string.IsNullOrEmpty(request.Chromosome) && request.Position.HasValue)
+            {
+                query = query.Where(g =>
+                    g.Chromosome == request.Chromosome &&
+                    g.Start <= request.Position &&
+                    g.Stop >= request.Position);
+            }
+            else
+            {
+                return new List<Gene>();
+            }
 
-			await _context.SaveChangesAsync();
+            return await query.OrderBy(g => g.Name).ToListAsync();
+        }
 
+        private async Task<List<NmTranscript>> GetSortedTranscriptsByGeneId(string geneId)
+        {
+            return await _context.NmTranscripts
+                .Where(t => t.GeneId == geneId)
+                .OrderByDescending(t => t.IsInHouse)
+                .ThenByDescending(t => t.IsSelect)
+                .ThenByDescending(t => t.IsClinical)
+                .ThenBy(t => t.NmNumber)
+                .ToListAsync();
+        }
 
-			var result = new GeneResult
-			{
-				Name = existing.Name,
-				Chromosome = existing.Chromosome,
-				Start = existing.Start,
-				Stop = existing.Stop,
-				UserInfo = existing.UserInfo
-			};
+        private async Task<List<NmTranscript>> GetRelevantTranscripts(Gene gene, GeneRequest request)
+        {
+            if (!string.IsNullOrEmpty(request.Chromosome) && request.Position.HasValue)
+            {
+                return await _context.GeneVariants
+                    .Include(gv => gv.NmTranscript)
+                    .Where(gv => gv.Variant.Chromosome == request.Chromosome &&
+                                 gv.Variant.Position == request.Position)
+                    .Select(gv => gv.NmTranscript)
+                    .ToListAsync();
+            }
 
+            if (!string.IsNullOrEmpty(request.Nm_Number))
+            {
+                return await _context.NmTranscripts
+                    .Where(t => t.GeneId == gene.Name && t.NmNumber.ToLower() == request.Nm_Number.ToLower())
+                    .ToListAsync();
+            }
 
-			var existingTranscript = await _context.NmTranscripts.FindAsync(gene.Nm_Number);
-			if (existingTranscript == null) return null;
+            return await GetSortedTranscriptsByGeneId(gene.Name);
+        }
 
-			existingTranscript.IsSelect = gene.IsSelect;
-			existingTranscript.IsInHouse = gene.IsInHouse;
-			existingTranscript.IsClinical = gene.IsClinical;
+        private async Task<List<Variant>> GetVariantsForGene(Gene gene)
+        {
+            return await _context.Variants
+                .Where(v => v.Chromosome == gene.Chromosome &&
+                            v.Position >= gene.Start &&
+                            v.Position <= gene.Stop)
+                .ToListAsync();
+        }
 
-			await _context.SaveChangesAsync();
+        private async Task<List<Variant>> GetRelevantVariants(Gene gene, GeneRequest request)
+        {
+            if (!string.IsNullOrEmpty(request.Chromosome) && request.Position.HasValue)
+            {
+                return await _context.Variants
+                    .Where(v => v.Chromosome == request.Chromosome &&
+                                v.Position == request.Position)
+                    .ToListAsync();
+            }
 
-			return result;
-		}
+            return await GetVariantsForGene(gene);
+        }
 
-		public async Task<bool> Delete(string name)
-		{
-			var gene = await _context.Genes.FindAsync(name);
-			if (gene == null)
-				return false;
+        private GeneResult BuildGeneResult(Gene gene, List<NmTranscript> transcripts, List<Variant> variants)
+        {
+            var orderedTranscripts = transcripts
+                .OrderByDescending(t => t.IsInHouse)
+                .ThenByDescending(t => t.IsSelect)
+                .ThenByDescending(t => t.IsClinical)
+                .ThenBy(t => t.NmNumber)
+                .ToList();
 
-			_context.Genes.Remove(gene);
-			await _context.SaveChangesAsync();
-			return true;
-		}
-
-		public async Task<Gene> GetByName(string name)
-		{
-			return await _context.Genes.FirstOrDefaultAsync(g => g.Name.ToLower() == name.ToLower());
-		}
-	}
+            return new GeneResult
+            {
+                Name = gene.Name,
+                Chromosome = gene.Chromosome,
+                Start = gene.Start,
+                Stop = gene.Stop,
+                UserInfo = gene.UserInfo,
+                NmNumbers = orderedTranscripts,
+                Variants = variants
+            };
+        }
+    }
 }
