@@ -7,47 +7,64 @@
 <PageTitle>Upload Results</PageTitle>
 
 <div class="container py-4">
-    <h1>Upload Results</h1>
+    <h1 class="h3 text-main mb-4"><strong>Upload Results</strong></h1>
 
     @if (UploadResultState?.Result?.Rows != null && UploadResultState.Result.Rows.Any())
     {
-	    <table class="table table-striped table-bordered">
-		    <thead>
-		    <tr>
-			    <th>Chromosome</th>
-			    <th>Position</th>
-			    <th>Reference</th>
-			    <th>Alternative</th>
-			    <th>Gene Name</th>
-			    <th>Nm Number</th>
-			    <th>Is In House</th>
-			    <th>Biological Effect</th>
-			    <th>Classification</th>
-			    <th>Is Known Position</th>
-		    </tr>
-		    </thead>
-		    <tbody>
-		    @foreach (var row in UploadResultState.Result.Rows)
-		    {
-			    <tr>
-				    <td>@row.Chromosome</td>
-				    <td>@row.Position</td>
-				    <td>@row.Reference</td>
-				    <td>@row.Alternative</td>
-				    <td>@(string.IsNullOrEmpty(row.GeneName) ? "-" : row.GeneName)</td>
-				    <td>@(string.IsNullOrEmpty(row.NmNumber) ? "-" : row.NmNumber)</td>
-				    <td>@(row.IsInHouse.HasValue ? (row.IsInHouse.Value ? "Yes" : "No") : "-")</td>
-				    <td>@(string.IsNullOrEmpty(row.BiologicalEffect) ? "-" : row.BiologicalEffect)</td>
-				    <td>@(string.IsNullOrEmpty(row.Classification) ? "-" : row.Classification)</td>
-				    <td>@(row.IsKnownPosition ? "Yes" : "No")</td>
-			    </tr>
-		    }
-		    </tbody>
-	    </table>
-	    <a href="@UploadResultState?.Result?.DownloadUrl" target="_blank" class="btn btn-success mt-3">Download</a>
+        <section class="mb-5">
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Chromosome</th>
+                            <th>Position</th>
+                            <th>Reference</th>
+                            <th>Alternative</th>
+                            <th>Gene Name</th>
+                            <th>Nm Number</th>
+                            <th>Is In House</th>
+                            <th>Biological Effect</th>
+                            <th>Classification</th>
+                            <th>Is Known Position</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in UploadResultState.Result.Rows)
+                        {
+                            <tr>
+                                <td>@row.Chromosome</td>
+                                <td>@row.Position</td>
+                                <td>@row.Reference</td>
+                                <td>@row.Alternative</td>
+                                <td>@(string.IsNullOrEmpty(row.GeneName) ? "-" : row.GeneName)</td>
+                                <td>@(string.IsNullOrEmpty(row.NmNumber) ? "-" : row.NmNumber)</td>
+                                <td class="text-center align-middle">
+                                    <span class="@(row.IsInHouse.HasValue ? (row.IsInHouse.Value ? "bg-true" : "bg-false") : "") rounded-badge">
+                                        @(row.IsInHouse.HasValue ? (row.IsInHouse.Value ? "✓" : "✗") : "-")
+                                    </span>
+                                </td>
+                                <td>@(string.IsNullOrEmpty(row.BiologicalEffect) ? "-" : row.BiologicalEffect)</td>
+                                <td>@(string.IsNullOrEmpty(row.Classification) ? "-" : row.Classification)</td>
+                                <td class="text-center align-middle">
+                                    <span class="@(row.IsKnownPosition ? "bg-true" : "bg-false") rounded-badge">
+                                        @(row.IsKnownPosition ? "✓" : "✗")
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4">
+                <a href="@UploadResultState?.Result?.DownloadUrl" target="_blank" class="btn btn-main fw-bold">
+                    Download
+                </a>
+            </div>
+        </section>
     }
     else
     {
-        <p>No upload results available to display.</p>
+        <div class="text-muted">No upload results available to display.</div>
     }
 </div>
