@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Components.Forms;
 using AzDeltaKVT.Dto.Requests;
 using AzDeltaKVT.Dto.Results;
 using AzDektaKVT.Model;
+using System.Xml.Linq;
 
 namespace AzDeltaKVT.UI.Services
 {
@@ -131,7 +132,40 @@ namespace AzDeltaKVT.UI.Services
             return new List<VariantResult>();
         }
 
-      public async Task<List<VariantResult>> SearchVariantsAsync(string? chromosome = null, int? position = null, int? variantId = null)
+        public async Task<List<VariantResult>> GetPositionsFromNm(string? Nm = null)
+        {
+            if (string.IsNullOrWhiteSpace(Nm))
+                return new List<VariantResult>();
+
+            // 1. Zoek genen op basis van Nm
+            var genes = await SearchGenesAsync(nmNumber: Nm);
+            if (genes == null || !genes.Any())
+                return new List<VariantResult>();
+
+            var gene = genes.First();
+
+            // 2. Haal alle gene variants op
+            var allGeneVariants = await GetGeneVariantsAsync();
+
+            // 3. Pak de eerste matching variant (op NmId)
+            var matchingVariant = allGeneVariants
+                .FirstOrDefault(v =>
+                    v.NmId?.Equals(Nm, StringComparison.OrdinalIgnoreCase) == true
+                );
+
+            if (matchingVariant == null)
+                return new List<VariantResult>();
+
+            // 4. Gebruik de VariantId om de echte variant info op te halen
+            var variantResults = await SearchVariantsAsync(variantId: matchingVariant.VariantId);
+
+            return variantResults;
+        }
+
+
+
+
+        public async Task<List<VariantResult>> SearchVariantsAsync(string? chromosome = null, int? position = null, int? variantId = null)
       {
             var request = new VariantRequest
             {

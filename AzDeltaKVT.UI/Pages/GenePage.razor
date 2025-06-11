@@ -65,8 +65,8 @@
 
         <!-- Known Positions Section -->
         <section class="mb-5">
-                    @if (positions != null && positions.Any())
-                    {
+            @if (positions != null && positions.Any())
+            {
                 <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
                     <h1 class="h5 text-main m-0">Gene positions</h1>
                     <button type="button" @onclick="NavigateToInsertPosition" class="btn btn-main">
@@ -74,57 +74,57 @@
                     </button>
                 </div>
 
-                        <div class="table-responsive">
-                            <table class="table table-bordered align-middle">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Chromosome</th>
-                                        <th>Position</th>
-                                        <th>Reference</th>
-                                        <th>Alternative</th>
-                                        @if (geneVariants.Any())
-                                        {
-                                            <th>Biological Effect</th>
-                                            <th>Classification</th>
-                                        }
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var position in positions)
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Chromosome</th>
+                                <th>Position</th>
+                                <th>Reference</th>
+                                <th>Alternative</th>
+                                @if (geneVariants.Any())
+                                {
+                                    <th>Biological Effect</th>
+                                    <th>Classification</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var position in positions)
+                            {
+                                var geneVariant = geneVariants.FirstOrDefault(gv => gv.VariantId == position.VariantId);
+                                <tr>
+                                    <td>
+                                        <button type="button" @onclick="() => NavigateToPositionPage(position.VariantId)"
+                                        class="btn btn-link text-dark text-decoration-underline p-0">
+                                            @position.Chromosome
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button type="button" @onclick="() => NavigateToPositionPage(position.VariantId)"
+                                        class="btn btn-link text-dark text-decoration-underline p-0">
+                                            @position.Position
+                                        </button>
+                                    </td>
+                                    <td>@position.Reference</td>
+                                    <td>@position.Alternative</td>
+                                    @if (geneVariants.Any())
                                     {
-                                        var geneVariant = geneVariants.FirstOrDefault(gv => gv.VariantId == position.VariantId);
-                                        <tr>
-                                            <td>
-                                                <button type="button" @onclick="() => NavigateToPositionPage(position.VariantId)"
-                                                        class="btn btn-link text-dark text-decoration-underline p-0">
-                                                    @position.Chromosome
-                                                </button>
-                                            </td>
-                                            <td>
-                                                <button type="button" @onclick="() => NavigateToPositionPage(position.VariantId)"
-                                                        class="btn btn-link text-dark text-decoration-underline p-0">
-                                                    @position.Position
-                                                </button>
-                                            </td>
-                                            <td>@position.Reference</td>
-                                            <td>@position.Alternative</td>
-                                            @if (geneVariants.Any())
-                                            {
-                                                <td>@(geneVariant?.BiologicalEffect ?? "-")</td>
-                                                <td>@(geneVariant?.Classification ?? "-")</td>
-                                            }
-                                        </tr>
+                                        <td>@(geneVariant?.BiologicalEffect ?? "-")</td>
+                                        <td>@(geneVariant?.Classification ?? "-")</td>
                                     }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="text-muted text-center py-3">
-                            No known positions found for this @(currentTranscript != null ? "transcript" : "gene").
-                        </div>
-                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-muted text-center py-3">
+                    No known positions found for this @(currentTranscript != null ? "transcript" : "gene").
+                </div>
+            }
         </section>
     }
     else
@@ -181,13 +181,13 @@
             {
                 await LoadTranscript();
             }
-            
+
             // Load gene information (either by name or from transcript)
             await LoadGene();
-            
+
             // Load positions for this gene
             await LoadPositions();
-            
+
             // Load gene variants for additional info
             await LoadGeneVariants();
         }
@@ -220,7 +220,7 @@
     {
         if (string.IsNullOrEmpty(Nm)) return;
         currentTranscript = await Api.GetTranscriptAsync(Nm);
-        
+
         // If we got transcript but no gene yet, get the full gene data
         if (currentTranscript?.Gene != null && currentGene == null)
         {
@@ -230,25 +230,12 @@
 
     private async Task LoadPositions()
     {
-        if (currentGene == null) return;
-        
-        // Variants are now included in the gene response
-        if (currentGene.Variants != null)
-        {
-            // Convert from Model.Variant to VariantResult
-            positions = currentGene.Variants.Select(v => new VariantResult
-            {
-                VariantId = v.VariantId,
-                Chromosome = v.Chromosome,
-                Position = v.Position,
-                Reference = v.Reference,
-                Alternative = v.Alternative,
-                UserInfo = v.UserInfo
-            }).ToList();
-        }
-        else
-        {
-            positions = new List<VariantResult>();
+        if (Nm == null) return;
+
+        else{
+            var NmPositions = await Api.GetPositionsFromNm(Nm);
+
+            positions = NmPositions;
         }
     }
 
