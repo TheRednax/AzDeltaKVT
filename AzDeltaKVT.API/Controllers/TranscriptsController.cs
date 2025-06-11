@@ -52,10 +52,11 @@ namespace AzDeltaKVT.API.Controllers
         }
 
         // DELETE /transcripts/delete
-        [HttpDelete("delete")]
-        public async Task<IActionResult> Delete([FromBody] NmTranscript transcript)
+        [HttpDelete("{nmNumber}")]
+        public async Task<IActionResult> Delete(string nmNumber)
         {
-            var deleted = await _transcriptService.Delete(transcript.NmNumber);
+            var transcript = await _transcriptService.Get(nmNumber);
+			var deleted = await _transcriptService.Delete(transcript.NmNumber);
             return Ok(deleted);
         }
     }

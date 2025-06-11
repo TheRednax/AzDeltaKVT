@@ -1,10 +1,11 @@
-﻿using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
-using Microsoft.AspNetCore.Components.Forms;
+﻿using AzDektaKVT.Model;
 using AzDeltaKVT.Dto.Requests;
 using AzDeltaKVT.Dto.Results;
-using AzDektaKVT.Model;
+using Microsoft.AspNetCore.Components.Forms;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 using System.Xml.Linq;
 
 namespace AzDeltaKVT.UI.Services
@@ -450,16 +451,8 @@ namespace AzDeltaKVT.UI.Services
         {
             Console.WriteLine($"RemoveTranscriptAsync called with: {nmNumber}");
 
-            var transcriptRequest = new NmTranscript { NmNumber = nmNumber };
-            var json = JsonSerializer.Serialize(transcriptRequest, _jsonOptions);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var request = new HttpRequestMessage(HttpMethod.Delete, "/transcripts/delete")
-            {
-                Content = content
-            };
-
-            var response = await _httpClient.SendAsync(request);
+            var route = $"/Transcripts/{nmNumber}";
+            var response = await _httpClient.DeleteAsync(route);
             Console.WriteLine($"Remove Transcript Response status: {response.StatusCode}");
 
             if (response.IsSuccessStatusCode)
