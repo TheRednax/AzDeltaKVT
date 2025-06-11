@@ -29,15 +29,15 @@
         <div class="row g-3">
             <div class="col-md-6">
                 <label class="form-label fw-semibold text-main">Name:</label>
-                <input type="text" @bind="geneName" disabled="@IsEditMode" 
-                       class="form-control @(IsEditMode ? "bg-light" : "")" />
+                <input type="text" @bind="geneName" disabled="@IsEditMode"
+                       class="form-control @(IsEditMode ? "bg-light" : "")" placeholder="Enter gene name here (example: KIT)" />
                 @if (IsEditMode) { <small class="text-muted">INSERT ONLY</small> }
             </div>
 
             <div class="col-md-6">
                 <label class="form-label fw-semibold text-main">NM Number:</label>
-                <input type="text" @bind="nmNumber" disabled="@IsEditMode" 
-                       class="form-control @(IsEditMode ? "bg-light" : "")" />
+                <input type="text" @bind="nmNumber" disabled="@IsEditMode"
+                       class="form-control @(IsEditMode ? "bg-light" : "")" placeholder="Enter NM number here (example: NM_000222.2)" />
                 @if (IsEditMode) { <small class="text-muted">INSERT ONLY</small> }
             </div>
 
@@ -64,22 +64,22 @@
 
             <div class="col-md-4">
                 <label class="form-label fw-semibold text-main">Chromosome:</label>
-                <input type="text" @bind="chromosome" disabled="@IsEditMode" 
-                       class="form-control @(IsEditMode ? "bg-light" : "")" />
+                <input type="text" @bind="chromosome" disabled="@IsEditMode"
+                       class="form-control @(IsEditMode ? "bg-light" : "")" placeholder="Enter chromosone here (example: MT)" />
                 @if (IsEditMode) { <small class="text-muted">INSERT ONLY</small> }
             </div>
 
             <div class="col-md-4">
                 <label class="form-label fw-semibold text-main">Start:</label>
-                <input type="number" @bind="start" disabled="@IsEditMode" 
-                       class="form-control @(IsEditMode ? "bg-light" : "")" />
+                <input type="number" @bind="start" disabled="@IsEditMode"
+                       class="form-control @(IsEditMode ? "bg-light" : "")"/>
                 @if (IsEditMode) { <small class="text-muted">INSERT ONLY</small> }
             </div>
 
             <div class="col-md-4">
                 <label class="form-label fw-semibold text-main">Stop:</label>
-                <input type="number" @bind="stop" disabled="@IsEditMode" 
-                       class="form-control @(IsEditMode ? "bg-light" : "")" />
+                <input type="number" @bind="stop" disabled="@IsEditMode"
+                       class="form-control @(IsEditMode ? "bg-light" : "")"/>
                 @if (IsEditMode) { <small class="text-muted">INSERT ONLY</small> }
             </div>
 
