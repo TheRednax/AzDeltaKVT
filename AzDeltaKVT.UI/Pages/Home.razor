@@ -20,13 +20,17 @@
                 <input type="text" @bind="geneSearchTerm" @bind:event="oninput"
                        @onkeydown="@(async (e) => await HandleGeneKeyDown(e))"
                        class="form-control" placeholder="Enter gene here" />
-                @if (!string.IsNullOrEmpty(geneErrorMessage))
-                {
-                    <div class="text-danger small mt-1">@geneErrorMessage</div>
-                }
+				<div style="min-height: 20px;">
+					@if (!string.IsNullOrEmpty(geneErrorMessage))
+					{
+						<div class="text-danger small mt-1">@geneErrorMessage</div>
+					}
+				</div>
             </div>
-            <div class="col-md-2 d-flex align-items-end">
-                <button @onclick="SearchGene" class="btn btn-main fw-bold w-100" type="button">Search</button>
+            <div class="col-md-2">
+				<div style="margin-top: 32px;">	
+					<button @onclick="SearchGene" class="btn btn-main fw-bold w-100" type="button">Search</button>
+				</div>
             </div>
         </div>
     </section>
@@ -45,13 +49,17 @@
                 <input type="text" @bind="positionSearchTerm" @bind:event="oninput"
                        @onkeydown="@(async (e) => await HandlePositionKeyDown(e))"
                        class="form-control" placeholder="Enter position here" />
-                @if (!string.IsNullOrEmpty(positionErrorMessage))
-                {
-                    <div class="text-danger small mt-1">@positionErrorMessage</div>
-                }
+				<div style="min-height: 20px;">
+					@if (!string.IsNullOrEmpty(positionErrorMessage))
+					{
+						<div class="text-danger small mt-1">@positionErrorMessage</div>
+					}
+				</div>
             </div>
-            <div class="col-md-2 d-flex align-items-end">
-                <button @onclick="SearchPosition" class="btn btn-main fw-bold w-100" type="button">Search</button>
+            <div class="col-md-2">
+				<div style="margin-top: 32px;">
+					<button @onclick="SearchPosition" class="btn btn-main fw-bold w-100" type="button">Search</button>
+				</div>
             </div>
         </div>
     </section>
