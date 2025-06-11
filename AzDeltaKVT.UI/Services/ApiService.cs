@@ -383,9 +383,9 @@ namespace AzDeltaKVT.UI.Services
                     throw new Exception("Failed to create gene: transcript already exists, please choose a new transcript number");
                 }
                 // Check voor gene naam duplicate
-                else if (error.Contains("Gene with this name already exists"))
+                else if (error.Contains("combination of Transcript number and Gene name"))
                 {
-                    throw new Exception("Failed to create gene: a gene with this name already exists, please choose a different name");
+                    throw new Exception("Failed to create gene: This combination of Transcript number and Gene name already exists,please choose a new transcript number or gene name");
                 }
                 else
                 {
