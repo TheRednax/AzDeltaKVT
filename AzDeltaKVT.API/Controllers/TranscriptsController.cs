@@ -2,6 +2,7 @@
 using AzDektaKVT.Model;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using AzDeltaKVT.Dto.Requests;
 
 namespace AzDeltaKVT.API.Controllers
 {
@@ -10,11 +11,15 @@ namespace AzDeltaKVT.API.Controllers
     public class TranscriptsController : ControllerBase
     {
         private readonly TranscriptService _transcriptService;
+        private readonly GeneVariantService _geneVariantService;
+        private readonly VariantService _variantService;
 
-        public TranscriptsController(TranscriptService transcriptService)
+		public TranscriptsController(TranscriptService transcriptService, GeneVariantService geneVariantService, VariantService variantService)
         {
             _transcriptService = transcriptService;
-        }
+            _geneVariantService = geneVariantService;
+            _variantService = variantService;
+		}
 
         // GET /transcripts
         [HttpGet]
@@ -56,6 +61,20 @@ namespace AzDeltaKVT.API.Controllers
         public async Task<IActionResult> Delete(string nmNumber)
         {
             var transcript = await _transcriptService.Get(nmNumber);
+            var geneVariants = await _geneVariantService.Find();
+            var geneVariantTranscripts = geneVariants.Where(gv => gv.NmId == nmNumber).ToList();
+            if (transcript == null || !geneVariantTranscripts.Any())
+            {
+                return BadRequest("Transcript cannot be deleted because it is associated with a gene variant.");
+			}
+
+            foreach (var geneVariant in geneVariantTranscripts)
+            {
+	            await _variantService.Delete(geneVariant.VariantId);
+	            await _geneVariantService.Delete(new GeneVariantRequest
+		            { VariantId = geneVariant.VariantId, NmId = nmNumber });
+            }
+
 			var deleted = await _transcriptService.Delete(transcript.NmNumber);
             return Ok(deleted);
         }
