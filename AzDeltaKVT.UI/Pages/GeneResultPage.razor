@@ -255,29 +255,15 @@
 
     private async Task SearchByNm(string nmNumber)
     {
-        var transcript = await Api.GetTranscriptAsync(nmNumber);
+	    geneResults = await Api.SearchGenesAsync(nmNumber: nmNumber);
+
+	    if (geneResults != null && geneResults.Any())
+	    {
+		    geneResults = geneResults.OrderBy(g => g.Name).ToList();
+		    LoadTranscriptsFromGenes();
+		    LoadVariantsFromGenes();
+	    }
         
-        if (transcript?.Gene != null)
-        {
-            var fullGenes = await Api.SearchGenesAsync(name: transcript.Gene.Name);
-            
-            if (fullGenes != null && fullGenes.Any())
-            {
-                geneResults = fullGenes;
-                geneTranscripts[transcript.Gene.Name] = new List<NmTranscript>
-                {
-                new NmTranscript
-                {
-                   NmNumber = transcript.NmNumber,
-				   GeneId = transcript.GeneId,
-				   IsSelect = transcript.IsSelect,
-				   IsInHouse = transcript.IsInHouse,
-				   IsClinical = transcript.IsClinical
-                }
-                };
-                LoadVariantsFromGenes();
-            }
-        }
     }
 
     private async Task SearchByPosition(string chromosome, int position)
