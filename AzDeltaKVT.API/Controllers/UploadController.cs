@@ -17,7 +17,7 @@ namespace AzDeltaKVT.API.Controllers
 		}
 
 		[HttpPost]
-		public async Task<IActionResult> UploadFile([FromForm] IFormFile tsvFile)
+		public async Task<IActionResult> UploadFile( IFormFile tsvFile)
 		{
 			try
 			{
