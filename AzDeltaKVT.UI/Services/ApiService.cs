@@ -166,7 +166,7 @@ namespace AzDeltaKVT.UI.Services
 
 
         public async Task<List<VariantResult>> SearchVariantsAsync(string? chromosome = null, int? position = null, int? variantId = null)
-      {
+        {
             var request = new VariantRequest
             {
                 VariantId = variantId ?? 0,
@@ -185,7 +185,7 @@ namespace AzDeltaKVT.UI.Services
             {
                 var responseJson = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"SearchVariants API Response: {responseJson}");
-        
+
                 try
                 {
                     // Try to deserialize as a single object first
@@ -216,7 +216,7 @@ namespace AzDeltaKVT.UI.Services
                 Console.WriteLine($"SearchVariants API Error: {response.StatusCode} - {error}");
             }
             return new List<VariantResult>();
-      }
+        }
 
         public async Task<VariantResult?> GetVariantAsync(int id)
         {
@@ -324,36 +324,36 @@ namespace AzDeltaKVT.UI.Services
 
         public async Task<UploadResult> UploadFileAsync(IBrowserFile file)
         {
-	        if (file == null)
-		        throw new ArgumentNullException(nameof(file));
+            if (file == null)
+                throw new ArgumentNullException(nameof(file));
 
-	        var maxAllowedSize = 10 * 1024 * 1024; // 10 MB max size
+            var maxAllowedSize = 10 * 1024 * 1024; // 10 MB max size
 
-	        using var content = new MultipartFormDataContent();
-	        using var stream = file.OpenReadStream(maxAllowedSize);
-	        var streamContent = new StreamContent(stream);
-	        var mediaType = string.IsNullOrWhiteSpace(file.ContentType)
-		        ? "text/tab-separated-values"
-		        : file.ContentType;
-	        streamContent.Headers.ContentType = new MediaTypeHeaderValue(mediaType);
+            using var content = new MultipartFormDataContent();
+            using var stream = file.OpenReadStream(maxAllowedSize);
+            var streamContent = new StreamContent(stream);
+            var mediaType = string.IsNullOrWhiteSpace(file.ContentType)
+                ? "text/tab-separated-values"
+                : file.ContentType;
+            streamContent.Headers.ContentType = new MediaTypeHeaderValue(mediaType);
 
 
-	        content.Add(streamContent, "TsvFile", file.Name);
+            content.Add(streamContent, "TsvFile", file.Name);
 
-	        var response = await _httpClient.PostAsync("/upload", content);
+            var response = await _httpClient.PostAsync("/upload", content);
 
-	        if (response.IsSuccessStatusCode)
-	        {
-		        // Optionally parse response content
-		        string result = await response.Content.ReadAsStringAsync();
-		        return JsonSerializer.Deserialize<AzDeltaKVT.Dto.Results.UploadResult>(result, _jsonOptions) ??
-		               new AzDeltaKVT.Dto.Results.UploadResult();
-	        }
-	        else
-	        {
-		        var error = await response.Content.ReadAsStringAsync();
-		        throw new Exception($"File upload failed: {error}");
-	        }
+            if (response.IsSuccessStatusCode)
+            {
+                // Optionally parse response content
+                string result = await response.Content.ReadAsStringAsync();
+                return JsonSerializer.Deserialize<AzDeltaKVT.Dto.Results.UploadResult>(result, _jsonOptions) ??
+                       new AzDeltaKVT.Dto.Results.UploadResult();
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                throw new Exception($"File upload failed: {error}");
+            }
         }
 
         public async Task<bool> CreateGeneAsync(GeneRequest request)
@@ -558,6 +558,63 @@ namespace AzDeltaKVT.UI.Services
             }
         }
 
+        public async Task<GeneVariantResult> GetPositionByVariantId(int variantId)
+        {
+            var requestData = new GeneVariantRequest
+            {
+                NmId = "NM_001230", // ✅ verplicht veld op rootniveau
+                NmTranscript = new NmTranscript
+                {
+                    NmNumber = "NM_001230",
+                    GeneId = "DAB",
+                    Gene = new Gene
+                    {
+                        Name = "DAB",
+                        Chromosome = "1",
+                        Start = 1000,
+                        Stop = 2000,
+                        UserInfo = "Test gene info"
+                    },
+                    IsSelect = true,
+                    IsClinical = true,
+                    IsInHouse = true
+                },
+                VariantId = variantId,
+                Variant = new Variant
+                {
+                    Chromosome = "",
+                    Position = 0,
+                    Reference = "",
+                    Alternative = "",
+                    UserInfo = ""
+                },
+                BiologicalEffect = "",
+                Classification = "",
+                UserInfo = ""
+            };
+
+
+
+            var jsonRequest = JsonSerializer.Serialize(requestData);
+            var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
+
+            Console.WriteLine($"GetPositionByVariantId POST called with: VariantId={variantId}");
+            var response = await _httpClient.PostAsync("/genevariants/get", content);
+            Console.WriteLine($"Get Position Response status: {response.StatusCode}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Get Position API Response: {json}");
+                return JsonSerializer.Deserialize<GeneVariantResult>(json, _jsonOptions);
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Get Position API Error: {response.StatusCode} - {error}");
+                throw new Exception($"Failed to get position: {error}");
+            }
+        }
 
 
     }

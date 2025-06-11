@@ -31,7 +31,7 @@ namespace AzDeltaKVT.Services
             return await _context.GeneVariants
                 .Include(gv => gv.Variant)
                 .Include(gv => gv.NmTranscript)
-                .FirstOrDefaultAsync(gv => gv.NmId == nmId && gv.VariantId == variantId);
+                .FirstOrDefaultAsync(gv => gv.VariantId == variantId);
         }
 
         public async Task<GeneVariantResult> Create(GeneVariantRequest request)

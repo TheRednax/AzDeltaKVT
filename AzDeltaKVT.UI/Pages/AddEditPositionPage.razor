@@ -81,10 +81,12 @@
     private string alternative = string.Empty;
     private string biologicalEffect = string.Empty;
     private string classification = string.Empty;
+	private string variantId = string.Empty; 
 
     private bool isEdit = false;
 
-    protected override void OnInitialized()
+
+    protected override async Task OnInitializedAsync()
     {
         var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
         var queryParams = QueryHelpers.ParseQuery(uri.Query);
@@ -99,12 +101,40 @@
             chromosome = chr;
         }
 
-        if (queryParams.TryGetValue("position", out var pos))
+        if (queryParams.TryGetValue("variantId", out var var))
         {
-            position = pos;
+            variantId = var;
             isEdit = true;
+            await GetPositionInfo(); // Hier roep je de functie aan
         }
     }
+
+
+    private async Task GetPositionInfo()
+    {
+        if (int.TryParse(variantId, out int variantIdInt))
+        {
+            var positionInfo = await Api.GetPositionByVariantId(variantIdInt);
+
+            if (positionInfo != null)
+            {
+                chromosome = positionInfo.Variant.Chromosome;
+                position = positionInfo.Variant.Position.ToString();
+                reference = positionInfo.Variant.Reference;
+                alternative = positionInfo.Variant.Alternative;
+                biologicalEffect = positionInfo.BiologicalEffect;
+                classification = positionInfo.Classification;
+                nmNumber = positionInfo.NmId;
+            }
+        }
+        else
+        {
+            // Optioneel: Log foutmelding of behandel het geval dat variantId geen geldig getal is
+            Console.WriteLine($"Ongeldige variantId: {variantId}");
+        }
+    }
+
+
 
     private async Task HandleSave()
     {
