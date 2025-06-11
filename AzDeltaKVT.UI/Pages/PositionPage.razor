@@ -129,7 +129,7 @@
 
                                 <div class="ms-3">
                                     <button type="button" @onclick="() => EditTranscript(transcript)"
-                                            class="btn btn-main fw-bold">
+                                    class="btn btn-main fw-bold">
                                         EDIT
                                     </button>
                                 </div>
@@ -361,7 +361,8 @@
 
     private GeneVariantResult? GetGeneVariantForTranscript(string nmNumber)
     {
-        return GeneVariants.FirstOrDefault(gv => gv.NmTranscript?.NmNumber == nmNumber);
+        var geneVariant = GeneVariants.FirstOrDefault(gv => gv.NmId == nmNumber);
+        return geneVariant;
     }
 
     private int GetSortPriority(NmTranscriptResult transcript)

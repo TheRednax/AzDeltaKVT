@@ -246,8 +246,9 @@ namespace AzDeltaKVT.UI.Services
         public async Task<List<GeneVariantResult>> GetGeneVariantsForVariantsAsync(List<VariantResult> variants)
         {
             var allGeneVariants = await GetGeneVariantsAsync();
-            return allGeneVariants.Where(gv =>
+            var foundVariants = allGeneVariants.Where(gv =>
                 variants.Any(v => v.VariantId == gv.VariantId)).ToList();
+            return foundVariants;
         }
 
         // Convenience method to get transcripts from gene

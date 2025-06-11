@@ -38,6 +38,12 @@ namespace AzDeltaKVT.Services
 					.ThenBy(t => t.NmNumber)
 					.ToList();
 
+				var variants = await _context.Variants
+					.Where(v => v.Chromosome == gene.Chromosome &&
+					            v.Position >= gene.Start &&
+					            v.Position <= gene.Stop)
+					.ToListAsync();
+
 				results.Add(new GeneResult
 				{
 					Name = gene.Name,
@@ -45,7 +51,8 @@ namespace AzDeltaKVT.Services
 					Start = gene.Start,
 					Stop = gene.Stop,
 					UserInfo = gene.UserInfo,
-					NmNumbers = sortedTranscripts
+					NmNumbers = sortedTranscripts,
+					Variants = variants
 				});
 			}
 
