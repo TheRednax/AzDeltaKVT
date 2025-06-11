@@ -64,7 +64,7 @@ namespace AzDeltaKVT.Services
             else if (!string.IsNullOrEmpty(request.Nm_Number))
             {
                 var geneId = await _context.NmTranscripts
-                    .Where(t => t.NmNumber == request.Nm_Number)
+                    .Where(t => t.NmNumber.ToLower() == request.Nm_Number.ToLower())
                     .Select(t => t.GeneId)
                     .FirstOrDefaultAsync();
 
@@ -104,7 +104,7 @@ namespace AzDeltaKVT.Services
 	            else
 	            {
 		            nmNumbers = await _context.NmTranscripts
-			            .Where(t => t.GeneId == gene.Name && t.NmNumber == request.Nm_Number).ToListAsync();
+			            .Where(t => t.GeneId == gene.Name && t.NmNumber.ToLower() == request.Nm_Number.ToLower()).ToListAsync();
 	            }
 
 	            var orderedNms = nmNumbers
