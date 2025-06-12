@@ -140,12 +140,15 @@
 </div>
 
 @code {
+    // Parameters passed from parent component or URL
     [Parameter] public string? GeneName { get; set; }
     [Parameter] public string? NmNumber { get; set; }
 
+    // Determine whether the component is in edit or add mode
     private bool IsEditMode => !string.IsNullOrEmpty(GeneName) && !string.IsNullOrEmpty(NmNumber);
     private bool IsAddingTranscriptMode => !string.IsNullOrEmpty(GeneName) && string.IsNullOrEmpty(NmNumber);
 
+    // UI and form state
     private bool isLoading = false;
     private bool isSaving = false;
     private bool isRemoving = false;
@@ -153,6 +156,7 @@
     private bool showConfirmDialog = false;
     private string confirmMessage = "";
 
+    // Form input values
     private string geneName = "";
     private string nmNumber = "";
     private string chromosome = "";
@@ -165,11 +169,12 @@
 
     private GeneResult? originalGene;
 
+    // Load data when component is initialized
     protected override async Task OnInitializedAsync()
     {
         if (IsEditMode)
         {
-            await LoadData();
+            await LoadData(); // Load data for editing
         }
         else if (IsAddingTranscriptMode)
         {
@@ -178,14 +183,15 @@
 
             if (originalGene != null)
             {
-	            geneName = originalGene.Name;
-	            start = originalGene.Start;
-	            stop = originalGene.Stop;
-	            chromosome = originalGene.Chromosome;
+                geneName = originalGene.Name;
+                start = originalGene.Start;
+                stop = originalGene.Stop;
+                chromosome = originalGene.Chromosome;
             }
         }
-        }
+    }
 
+    // Load gene and transcript data for editing
     private async Task LoadData()
     {
         isLoading = true;
@@ -202,11 +208,11 @@
                 stop = originalGene.Stop;
                 userInfo = originalGene.UserInfo ?? "";
 
-                // Load specific transcript if NmNumber provided, otherwise first transcript
+                // Load specific transcript if NM number provided, otherwise load first available
                 NmTranscript? transcript = null;
                 if (!string.IsNullOrEmpty(NmNumber))
                 {
-                    transcript = originalGene.NmNumbers?.FirstOrDefault(t => 
+                    transcript = originalGene.NmNumbers?.FirstOrDefault(t =>
                         t.NmNumber?.Equals(NmNumber, StringComparison.OrdinalIgnoreCase) == true);
                 }
                 else
@@ -233,8 +239,10 @@
         }
     }
 
+    // Save or update gene and transcript data
     private async Task Save()
     {
+        // Validate required fields
         if (string.IsNullOrWhiteSpace(geneName) || string.IsNullOrWhiteSpace(nmNumber))
         {
             errorMessage = "Gene name and NM number are required";
@@ -242,51 +250,51 @@
         }
         if (string.IsNullOrWhiteSpace(chromosome))
         {
-	        errorMessage = "Chromosome is required";
-	        return;
+            errorMessage = "Chromosome is required";
+            return;
         }
         if (start <= 0)
         {
-	        errorMessage = "Start should be bigger than 0";
-	        return;
+            errorMessage = "Start should be greater than 0";
+            return;
         }
         if (stop <= 0)
         {
-	        errorMessage = "Stop Should be bigger than 0";
-	        return;
+            errorMessage = "Stop should be greater than 0";
+            return;
         }
         if (stop < start)
         {
-	        errorMessage = "Start should be bigger than stop";
-	        return;
+            errorMessage = "Stop should be greater than or equal to start";
+            return;
         }
 
         isSaving = true;
         errorMessage = "";
 
-		try
-		{
-			var request = new GeneRequest
-				{
-					Name = geneName,
-					Chromosome = chromosome,
-					Start = start,
-					Stop = stop,
-					UserInfo = userInfo,
-					Nm_Number = nmNumber,
-					Position = null,
-					IsClinical = isClinical,
-					IsInHouse = isInHouse,
-					IsSelect = isSelect
-				};
+        try
+        {
+            var request = new GeneRequest
+                {
+                    Name = geneName,
+                    Chromosome = chromosome,
+                    Start = start,
+                    Stop = stop,
+                    UserInfo = userInfo,
+                    Nm_Number = nmNumber,
+                    Position = null,
+                    IsClinical = isClinical,
+                    IsInHouse = isInHouse,
+                    IsSelect = isSelect
+                };
 
             if (IsEditMode)
             {
-                await Api.UpdateGeneAsync(request);
+                await Api.UpdateGeneAsync(request); // Update existing gene
             }
             else
             {
-                await Api.CreateGeneAsync(request);
+                await Api.CreateGeneAsync(request); // Create new gene
             }
 
             Navigation.NavigateTo("/");
@@ -301,6 +309,7 @@
         }
     }
 
+    // Show delete confirmation dialog
     private async Task Remove()
     {
         if (originalGene?.NmNumbers?.Count > 1)
@@ -315,12 +324,14 @@
         showConfirmDialog = true;
     }
 
+    // Cancel delete operation
     private void CancelDelete()
     {
         showConfirmDialog = false;
         confirmMessage = "";
     }
 
+    // Confirm and perform delete operation
     private async Task ConfirmDelete()
     {
         isRemoving = true;
@@ -330,11 +341,11 @@
         {
             if (originalGene?.NmNumbers?.Count > 1)
             {
-                await Api.RemoveTranscriptAsync(nmNumber);
+                await Api.RemoveTranscriptAsync(nmNumber); // Remove only the transcript
             }
             else
             {
-                await Api.RemoveGeneAsync(geneName);
+                await Api.RemoveGeneAsync(geneName); // Remove the entire gene
             }
 
             Navigation.NavigateTo("/");

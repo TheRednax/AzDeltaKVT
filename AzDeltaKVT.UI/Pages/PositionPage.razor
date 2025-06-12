@@ -7,7 +7,14 @@
 @inject NavigationManager Navigation
 
 <div class="container py-4">
-    <h1 class="h3 text-main mb-4"><strong>Position Page</strong></h1>
+    <div class="d-flex justify-content-between">
+        <h1 class="h3 text-main mb-4"><strong>Position Page</strong></h1>
+
+        <button class="btn btn-main mb-3" @onclick="NavigateToEditPosition">
+            Edit Position
+        </button>
+    </div>
+
 
     @if (IsLoading)
     {
@@ -27,10 +34,6 @@
     else
     {
 
-        <button class="btn btn-primary mb-3" @onclick="NavigateToEditPosition">
-            Edit Position
-        </button>
-        <!-- Position Information Section -->
         <section class="mb-5">
             <h2 class="h5 text-main mb-3">Position Information</h2>
             <div class="table-responsive">
@@ -61,7 +64,6 @@
             </div>
         </section>
 
-        <!-- NM Transcripts Section -->
         <section class="mb-5">
             <h2 class="h5 text-main mb-3">Associated NM Transcripts</h2>
 
@@ -151,31 +153,37 @@
 </div>
 
 @code {
+    // Parameters opgehaald uit querystring of component-aanroep
     [Parameter] public string? Chromosome { get; set; }
     [Parameter] public string? Position { get; set; }
     [Parameter, SupplyParameterFromQuery] public int? Id { get; set; }
 
+    // Velden voor weergave en verwerking
     private string GeneName = "";
     private string Reference = "";
     private string Alternative = "";
     private bool IsLoading = true;
     private string ErrorMessage = "";
 
+    // Transcript- en variantlijsten
     private List<NmTranscriptResult> Transcripts = new();
     private List<GeneVariantResult> GeneVariants = new();
 
+    // Transcriptlijst gesorteerd op prioriteit en NmNumber
     private List<NmTranscriptResult> SortedTranscripts =>
         Transcripts
             .OrderBy(x => GetSortPriority(x))
             .ThenBy(x => x.NmNumber)
             .ToList();
 
+    // Initialisatiemethode component
     protected override async Task OnInitializedAsync()
     {
         Console.WriteLine($"PositionPage parameters - Id: '{Id}', Chromosome: '{Chromosome}', Position: '{Position}'");
         await LoadPositionData();
     }
 
+    // Laad data op basis van variant ID of chromosoom en positie
     private async Task LoadPositionData()
     {
         try
@@ -207,9 +215,9 @@
         }
     }
 
+    // Zoek gegevens op basis van variant ID door alle genen te doorzoeken
     private async Task LoadByVariantId(int variantId)
     {
-        // Instead of trying to get variant, search all genes to find one with this variant ID
         var allGenes = await ApiService.GetAllGenesAsync();
 
         GeneResult? foundGene = null;
@@ -236,7 +244,7 @@
             Reference = foundVariant.Reference ?? "";
             Alternative = foundVariant.Alternative ?? "";
 
-            // Get transcripts from the found gene
+            // Transcripts van gevonden gen overnemen
             Transcripts = foundGene.NmNumbers?.Select(t => new NmTranscriptResult
                 {
                     NmNumber = t.NmNumber ?? "",
@@ -246,7 +254,7 @@
                     IsInHouse = t.IsInHouse
                 }).ToList() ?? new List<NmTranscriptResult>();
 
-            // Get gene variants
+            // Variants ophalen voor verdere info
             var variants = foundGene.Variants?.Select(v => new VariantResult
                 {
                     VariantId = v.VariantId,
@@ -265,15 +273,15 @@
         }
     }
 
+    // Laad gegevens op basis van chromosoom en positie
     private async Task LoadByChromosomePosition(string chromosome, string position)
     {
         this.Chromosome = chromosome;
         this.Position = position;
 
-        // Use the variants API to get variant info directly
         if (int.TryParse(position, out int pos))
         {
-            // First, try to get the variant directly using the variants API
+            // Probeer variant direct op te halen via API
             var variants = await ApiService.SearchVariantsAsync(chromosome, pos);
             var matchingVariant = variants.FirstOrDefault();
 
@@ -287,7 +295,8 @@
             else
             {
                 Console.WriteLine($"No variant found for {chromosome}:{position}");
-                // Fallback: try to find variant info from genes
+
+                // Als fallback, doorzoek genen op variant
                 var allGenes = await ApiService.GetAllGenesAsync();
 
                 foreach (var gene in allGenes)
@@ -312,9 +321,9 @@
         await LoadTranscriptsForPosition();
     }
 
+    // Laad transcriptgegevens voor de opgegeven positie
     private async Task LoadTranscriptsForPosition()
     {
-        // Get all transcripts and find the gene that contains this position
         var allGenes = await ApiService.GetAllGenesAsync();
 
         if (int.TryParse(Position, out int pos))
@@ -326,11 +335,9 @@
 
             if (genesContainingPosition.Any())
             {
-                // Use the first gene found
                 var gene = genesContainingPosition.First();
                 GeneName = gene.Name;
 
-                // Get all transcripts for this gene
                 Transcripts = gene.NmNumbers?.Select(t => new NmTranscriptResult
                     {
                         NmNumber = t.NmNumber ?? "",
@@ -340,7 +347,6 @@
                         IsInHouse = t.IsInHouse
                     }).ToList() ?? new List<NmTranscriptResult>();
 
-                // Load gene variants for additional info
                 var variants = gene.Variants?.Select(v => new VariantResult
                     {
                         VariantId = v.VariantId,
@@ -364,20 +370,23 @@
         }
     }
 
+    // Zoek een variant voor een gegeven transcriptnummer
     private GeneVariantResult? GetGeneVariantForTranscript(string nmNumber)
     {
         var geneVariant = GeneVariants.FirstOrDefault(gv => gv.NmId == nmNumber);
         return geneVariant;
     }
 
+    // Prioriteit voor sortering bepalen
     private int GetSortPriority(NmTranscriptResult transcript)
     {
-        if (transcript.IsInHouse) return 1;   // InHouse first
-        if (transcript.IsSelect) return 2;    // Select second
-        if (transcript.IsClinical) return 3;  // Clinical third
-        return 4;                             // Alphabetical last
+        if (transcript.IsInHouse) return 1;
+        if (transcript.IsSelect) return 2;
+        if (transcript.IsClinical) return 3;
+        return 4;
     }
 
+    // HTML-badge voor prioriteit
     private string GetPriorityBadge(NmTranscriptResult transcript)
     {
         return GetSortPriority(transcript) switch
@@ -389,6 +398,7 @@
         };
     }
 
+    // CSS-klasse bepalen voor classificatiebadge
     private string GetClassificationBadgeClass(string classification)
     {
         return classification?.ToLower() switch
@@ -402,17 +412,16 @@
         };
     }
 
+    // Navigeren naar edit-pagina voor transcript
     private void EditTranscript(NmTranscriptResult transcript)
     {
-        // Navigate to edit page for this specific transcript
         Navigation.NavigateTo($"/gene/edit/{Uri.EscapeDataString(GeneName)}/{Uri.EscapeDataString(transcript.NmNumber)}");
     }
 
-
-
+    // Navigeren naar edit-pagina voor positie/variant
     private void NavigateToEditPosition()
     {
-        string idString = Id?.ToString() ?? string.Empty;  // Convertimos a string y si es null ponemos string vacío
+        string idString = Id?.ToString() ?? string.Empty;
         var url = $"/position/edit?variantId={Uri.EscapeDataString(idString)}";
         Navigation.NavigateTo(url);
     }

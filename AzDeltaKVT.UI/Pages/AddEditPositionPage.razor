@@ -16,19 +16,16 @@
     </h1>
 
     <div class="row g-3">
-        <!-- NM Number -->
         <div class="col-md-6">
             <label class="form-label fw-semibold text-main">NM Number:</label>
             <input type="text" @bind="nmNumber" class="form-control bg-light" disabled />
         </div>
 
-        <!-- Chromosome -->
         <div class="col-md-6">
             <label class="form-label fw-semibold text-main">Chromosome:</label>
             <input type="text" @bind="chromosome" class="form-control bg-light" disabled />
         </div>
 
-        <!-- Position -->
         <div class="col-md-4">
             <label class="form-label fw-semibold text-main">Position:</label>
             <input type="text" @bind="position" class="form-control bg-light" disabled="@isEdit" />
@@ -38,25 +35,21 @@
             }
         </div>
 
-        <!-- Reference -->
         <div class="col-md-4">
             <label class="form-label fw-semibold text-main">Reference:</label>
             <input type="text" @bind="reference" class="form-control" />
         </div>
 
-        <!-- Alternative -->
         <div class="col-md-4">
             <label class="form-label fw-semibold text-main">Alternative:</label>
             <input type="text" @bind="alternative" class="form-control" />
         </div>
 
-        <!-- Biological Effect -->
         <div class="col-md-6">
             <label class="form-label fw-semibold text-main">Biological Effect:</label>
             <input type="text" @bind="biologicalEffect" class="form-control" />
         </div>
 
-        <!-- Classification -->
         <div class="col-md-6">
             <label class="form-label fw-semibold text-main">Classification:</label>
             <input type="text" @bind="classification" class="form-control" />
@@ -74,6 +67,7 @@
 </div>
 
 @code {
+    // Form fields
     private string nmNumber = string.Empty;
     private string chromosome = string.Empty;
     private string position = string.Empty;
@@ -84,33 +78,38 @@
     private string variantId = string.Empty;
     private int? variantIdInt = null;
 
+    // Determines if the form is in edit mode
     private bool isEdit = false;
 
-
+    // Initialization: parse query parameters and load data if editing
     protected override async Task OnInitializedAsync()
     {
         var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
         var queryParams = QueryHelpers.ParseQuery(uri.Query);
 
+        // Extract NM number from query string
         if (queryParams.TryGetValue("nm", out var nm))
         {
             nmNumber = nm;
         }
 
+        // Extract chromosome from query string
         if (queryParams.TryGetValue("chromosome", out var chr))
         {
             chromosome = chr;
         }
 
+        // Extract variantId and switch to edit mode if valid
         if (queryParams.TryGetValue("variantId", out var varIdStr) && int.TryParse(varIdStr, out var parsedId))
         {
             variantId = varIdStr;
-            variantIdInt = parsedId; // ✅ Store parsed value
+            variantIdInt = parsedId;
             isEdit = true;
-            await GetPositionInfo();
+            await GetPositionInfo(); // Load existing variant data
         }
     }
 
+    // Load variant details by variantId
     private async Task GetPositionInfo()
     {
         if (int.TryParse(variantId, out int variantIdInt))
@@ -130,13 +129,12 @@
         }
         else
         {
-            // Optioneel: Log foutmelding of behandel het geval dat variantId geen geldig getal is
-            Console.WriteLine($"Ongeldige variantId: {variantId}");
+            // Optional: handle invalid variantId
+            Console.WriteLine($"Invalid variantId: {variantId}");
         }
     }
 
-
-
+    // Create or update a gene variant
     private async Task HandleSave()
     {
         var geneVariantRequest = new GeneVariantRequest
@@ -150,34 +148,35 @@
                     Position = int.TryParse(position, out var posVal) ? posVal : 0,
                     Reference = reference,
                     Alternative = alternative,
-                    UserInfo = "standarduser" // ✅ Toegevoegd
+                    UserInfo = "standarduser" // Placeholder user
                 },
                 BiologicalEffect = biologicalEffect,
                 Classification = classification,
-                UserInfo = "standarduser" // ✅ Toegevoegd
+                UserInfo = "standarduser" // Placeholder user
             };
 
         if (isEdit)
         {
-            await Api.UpdatePosition(geneVariantRequest);
+            await Api.UpdatePosition(geneVariantRequest); // Update existing variant
             StateHasChanged();
         }
         else
         {
-            await Api.CreatePosition(geneVariantRequest);
+            await Api.CreatePosition(geneVariantRequest); // Create new variant
         }
 
-        Navigation.NavigateTo("/");
+        Navigation.NavigateTo("/"); // Redirect after save
     }
 
+    // Delete a variant by ID
     private async Task HandleDelete()
     {
         if (variantIdInt.HasValue)
         {
-            await Api.DeletePosition(variantIdInt);
-            Navigation.NavigateTo("/");
+            await Api.DeletePosition(variantIdInt); // Delete variant
+            Navigation.NavigateTo("/"); // Redirect after delete
         }
     }
-
 }
+
 

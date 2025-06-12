@@ -57,7 +57,7 @@ namespace AzDeltaKVT.API.Controllers
         [HttpDelete("delete/{variantId}")]
         public async Task<IActionResult> Delete(int variantId)
         {
-            var geneVariant = await _geneVariantService.GetByVariantId(variantId); // ✅ Add this service method
+            var geneVariant = await _geneVariantService.GetByVariantId(variantId); 
 
             if (geneVariant == null)
             {

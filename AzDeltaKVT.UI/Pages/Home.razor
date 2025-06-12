@@ -73,7 +73,7 @@
 	<section>
 		<button @onclick="ToggleUploadModal" class="btn btn-main fw-bold">Upload</button>
 	</section>
-	<!-- Upload Modal -->
+
 	@if (showUploadModal)
 	{
 		<div class="modal fade show d-block" tabindex="-1" @onclick="ToggleUploadModal" style="background-color: rgba(0, 0, 0, 0.5);">
@@ -104,9 +104,6 @@
 		</div>
 	}
 
-
-
-	<!-- Debug section - compact version -->
 	@if (isLoading || testResults.Any())
 	{
 		<section class="mt-5">
@@ -144,22 +141,30 @@
 </div>
 
 @code {
-	private string geneSearchTerm = "";
-	private string chromosomeSearchTerm = "";
-	private string positionSearchTerm = "";
+    // Inputvelden gebonden aan UI voor gen- en positiezaken
+    private string geneSearchTerm = "";
+    private string chromosomeSearchTerm = "";
+    private string positionSearchTerm = "";
 
-	private string geneErrorMessage = "";
-	private string positionErrorMessage = "";
+    // Foutmeldingen voor validatie of API-fouten
+    private string geneErrorMessage = "";
+    private string positionErrorMessage = "";
 
-	private bool isLoading = false;
-	private List<string> testResults = new();
+    // Status voor laden tijdens API-aanroepen
+    private bool isLoading = false;
 
+    // Lijst met testresultaten voor API-verbinding en data status
+    private List<string> testResults = new();
+
+    // Lifecycle methode bij initialisatie van component
     protected override async Task OnInitializedAsync()
     {
+        // Wacht 2 seconden en test verbinding met API
         await Task.Delay(2000);
         await TestApiConnection();
     }
 
+    // Handel toetsdruk Enter af in gen-zoekveld om zoeken te starten
     private async Task HandleGeneKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
@@ -168,6 +173,7 @@
         }
     }
 
+    // Handel toetsdruk Enter af in positie-zoekveld om zoeken te starten
     private async Task HandlePositionKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
@@ -176,48 +182,49 @@
         }
     }
 
+    // Test de verbinding met de API en haal data op ter verificatie
     private async Task TestApiConnection()
     {
         isLoading = true;
         testResults.Clear();
-        
+
         try
         {
             var genes = await Api.GetAllGenesAsync();
-            testResults.Add($"✅ Found {genes.Count} genes in database");
-            
+            testResults.Add($"Found {genes.Count} genes in database");
+
             if (genes.Any())
             {
                 var firstGene = genes.First();
-                testResults.Add($"✅ Sample gene: {firstGene.Name} (Chr {firstGene.Chromosome})");
-                
+                testResults.Add($"Sample gene: {firstGene.Name} (Chr {firstGene.Chromosome})");
+
                 if (firstGene.NmNumbers?.Any() == true)
                 {
-                    testResults.Add($"✅ Sample gene has {firstGene.NmNumbers.Count} transcripts");
+                    testResults.Add($"Sample gene has {firstGene.NmNumbers.Count} transcripts");
                 }
-                
+
                 if (firstGene.Variants?.Any() == true)
                 {
-                    testResults.Add($"✅ Sample gene has {firstGene.Variants.Count} variants");
+                    testResults.Add($"Sample gene has {firstGene.Variants.Count} variants");
                 }
             }
-            
+
             var kitSearch = await Api.SearchGenesAsync(name: "KIT");
             if (kitSearch.Any())
             {
-                testResults.Add($"✅ Gene search works - found KIT gene");
+                testResults.Add($"Gene search works - found KIT gene");
             }
             else
             {
-                testResults.Add($"⚠️ Gene search returned no results for KIT");
+                testResults.Add($"Gene search returned no results for KIT");
             }
-            
+
             var variants = await Api.GetAllVariantsAsync();
-            testResults.Add($"✅ Found {variants.Count} total variants");
+            testResults.Add($"Found {variants.Count} total variants");
         }
         catch (Exception ex)
         {
-            testResults.Add($"❌ API Error: {ex.Message}");
+            testResults.Add($"API Error: {ex.Message}");
             Console.WriteLine($"TestApiConnection Error: {ex}");
         }
         finally
@@ -226,21 +233,22 @@
         }
     }
 
-	private async Task SearchGene()
-	{
-		geneErrorMessage = "";
+    // Zoek op gen en navigeer naar resultatenpagina
+    private async Task SearchGene()
+    {
+        geneErrorMessage = "";
 
-		if (string.IsNullOrWhiteSpace(geneSearchTerm))
-		{
-			geneErrorMessage = "Please enter a gene name or NM number";
-			return;
-		}
+        if (string.IsNullOrWhiteSpace(geneSearchTerm))
+        {
+            geneErrorMessage = "Please enter a gene name or NM number";
+            return;
+        }
 
         var searchTerm = geneSearchTerm.Trim();
-        
+
         if (searchTerm.StartsWith("NM_", StringComparison.OrdinalIgnoreCase))
         {
-			Navigation.NavigateTo($"/gene-results?nm={Uri.EscapeDataString(searchTerm)}");
+            Navigation.NavigateTo($"/gene-results?nm={Uri.EscapeDataString(searchTerm)}");
         }
         else
         {
@@ -248,32 +256,35 @@
         }
     }
 
-	private async Task SearchPosition()
-	{
-		positionErrorMessage = "";
+    // Zoek op positie en navigeer naar resultatenpagina bij geldige invoer
+    private async Task SearchPosition()
+    {
+        positionErrorMessage = "";
 
-		if (string.IsNullOrWhiteSpace(chromosomeSearchTerm) || string.IsNullOrWhiteSpace(positionSearchTerm))
-		{
-			positionErrorMessage = "Please enter a chromosome and a position";
-			return;
-		}
+        if (string.IsNullOrWhiteSpace(chromosomeSearchTerm) || string.IsNullOrWhiteSpace(positionSearchTerm))
+        {
+            positionErrorMessage = "Please enter a chromosome and a position";
+            return;
+        }
+
         if (!int.TryParse(positionSearchTerm.Trim(), out int position))
         {
             positionErrorMessage = "Position must be a valid number";
             return;
         }
 
-		if (position <= 0)
-		{
-			positionErrorMessage = "Position must be greater than 0";
-			return;
-		}
+        if (position <= 0)
+        {
+            positionErrorMessage = "Position must be greater than 0";
+            return;
+        }
 
         var chromosome = chromosomeSearchTerm.Trim();
-        
+
         try
         {
             var genes = await Api.SearchByChromosomePositionAsync(chromosome, position);
+
             Navigation.NavigateTo($"/gene-results?chrom={Uri.EscapeDataString(chromosome)}&position={position}");
         }
         catch (Exception ex)
@@ -283,68 +294,72 @@
         }
     }
 
-	[Inject]
-	private UploadResultState uploadResultState { get; set; }
+    // Injecteer service voor het bewaren van uploadresultaten over componenten heen
+    [Inject]
+    private UploadResultState uploadResultState { get; set; }
 
-	private void NavigateToUploadResults(AzDeltaKVT.Dto.Results.UploadResult result)
-	{
-		uploadResultState.Result = result;
-		Navigation.NavigateTo("/UploadResult");
-	}
+    // Navigeer naar uploadresultaatpagina met meegegeven resultaat
+    private void NavigateToUploadResults(AzDeltaKVT.Dto.Results.UploadResult result)
+    {
+        uploadResultState.Result = result;
+        Navigation.NavigateTo("/UploadResult");
+    }
 
+    // Beheer uploadmodal en status
+    private bool showUploadModal = false;
+    private string uploadMessage = "";
+    private IBrowserFile? selectedFile;
 
-	private bool showUploadModal = false;
-	private string uploadMessage = "";
-	private IBrowserFile? selectedFile;
+    // Toggle zichtbaarheid van uploadmodal
+    private void ToggleUploadModal()
+    {
+        showUploadModal = !showUploadModal;
+    }
 
-	private void ToggleUploadModal()
-	{
-		showUploadModal = !showUploadModal;
-	}
+    // Verwerk geselecteerd bestand, controleer extensie .tsv
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
 
-	private async Task HandleFileSelected(InputFileChangeEventArgs e)
-	{
-		var file = e.File;
+        if (file == null || !file.Name.EndsWith(".tsv", StringComparison.OrdinalIgnoreCase))
+        {
+            uploadMessage = "Please select a valid .tsv file.";
+            return;
+        }
 
-		if (file == null || !file.Name.EndsWith(".tsv", StringComparison.OrdinalIgnoreCase))
-		{
-			uploadMessage = "Please select a valid .tsv file.";
-			return;
-		}
+        selectedFile = file;
+    }
 
-		selectedFile = file;
-	}
+    // Upload geselecteerd bestand naar API en verwerk response
+    private async Task UploadFile()
+    {
+        if (selectedFile == null)
+        {
+            uploadMessage = "No file selected.";
+            return;
+        }
 
+        try
+        {
+            uploadMessage = "Uploading...";
 
-	private async Task UploadFile()
-	{
-		if (selectedFile == null)
-		{
-			uploadMessage = "No file selected.";
-			return;
-		}
+            AzDeltaKVT.Dto.Results.UploadResult response = await Api.UploadFileAsync(selectedFile);
 
-		try
-		{
-			uploadMessage = "Uploading...";
+            if (!response.Errors.Any())
+            {
+                uploadMessage = "File uploaded successfully.";
+                showUploadModal = false;
 
-			AzDeltaKVT.Dto.Results.UploadResult response = await Api.UploadFileAsync(selectedFile);
-
-			if (!response.Errors.Any())
-			{
-				uploadMessage = "✅ File uploaded successfully.";
-				showUploadModal = false;
-
-				NavigateToUploadResults(response);
-			}
-			else
-			{
-				uploadMessage = $"❌ Upload failed: {response.Errors[0]}";
-			}
-		}
-		catch (Exception ex)
-		{
-			uploadMessage = $"❌ Error: {ex.Message}";
-		}
-	}
+                NavigateToUploadResults(response);
+            }
+            else
+            {
+                uploadMessage = $"Upload failed: {response.Errors[0]}";
+            }
+        }
+        catch (Exception ex)
+        {
+            uploadMessage = $"Error: {ex.Message}";
+        }
+    }
 }
