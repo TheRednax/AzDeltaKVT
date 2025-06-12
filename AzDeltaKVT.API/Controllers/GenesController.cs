@@ -46,37 +46,40 @@ namespace AzDeltaKVT.API.Controllers
 		public async Task<IActionResult> Create([FromBody] GeneRequest request)
 		{
 			var transcript = await _transcriptService.Get(request.Nm_Number);
-            if (transcript != null)
-            {
-                return BadRequest(new { message = "Transcript already exists for this NM number." });
-            }
+			if (transcript != null)
+			{
+				return BadRequest(new { message = "Transcript already exists for this NM number." });
+			}
 
-            var existingGene = await _geneService.GetByName(request.Name);
-            if (existingGene != null)
-            {
+			var existingGene = await _geneService.GetByName(request.Name);
+			if (existingGene != null)
+			{
 
-	            if (transcript != null)
-	            {
+				if (transcript != null)
+				{
 					return BadRequest(new { message = "This combination of Transcript number and Gene name already exists." });
 				}
 
-	            var requestTranscript = new NmTranscript
-	            {
-		            GeneId = request.Name, IsInHouse = request.IsInHouse, IsClinical = request.IsClinical,
-		            IsSelect = request.IsSelect, NmNumber = request.Nm_Number
-	            };
-	            var createdTranscript = await _transcriptService.Create(requestTranscript);
+				var requestTranscript = new NmTranscript
+				{
+					GeneId = request.Name,
+					IsInHouse = request.IsInHouse,
+					IsClinical = request.IsClinical,
+					IsSelect = request.IsSelect,
+					NmNumber = request.Nm_Number
+				};
+				var createdTranscript = await _transcriptService.Create(requestTranscript);
 				var geneResult = await _geneService.Get(new GeneRequest
 				{
 					Name = request.Name,
 					Nm_Number = request.Nm_Number,
 				});
 				return Ok(geneResult);
-            }
+			}
 
-            var createdGene = await _geneService.Create(request);
-            return Ok(createdGene);
-        }
+			var createdGene = await _geneService.Create(request);
+			return Ok(createdGene);
+		}
 
 		// PUT /genes/update
 		[HttpPut("update")]
@@ -95,18 +98,15 @@ namespace AzDeltaKVT.API.Controllers
 			var nmNumber = transcript.NmNumber;
 			var geneVariants = await _geneVariantService.Find();
 			var geneVariantTranscripts = geneVariants.Where(gv => gv.NmId == nmNumber).ToList();
-			if (transcript == null || !geneVariantTranscripts.Any())
+			if (!(transcript == null || !geneVariantTranscripts.Any()))
 			{
-				return BadRequest("Transcript cannot be deleted because it is associated with a gene variant.");
-			}
-
-			foreach (var geneVariant in geneVariantTranscripts)
-			{
-				await _variantService.Delete(geneVariant.VariantId);
-				await _geneVariantService.Delete(new GeneVariantRequest
+				foreach (var geneVariant in geneVariantTranscripts)
+				{
+					await _variantService.Delete(geneVariant.VariantId);
+					await _geneVariantService.Delete(new GeneVariantRequest
 					{ VariantId = geneVariant.VariantId, NmId = nmNumber });
+				}
 			}
-
 			var deleted = await _geneService.Delete(name);
 			return Ok(deleted);
 		}
