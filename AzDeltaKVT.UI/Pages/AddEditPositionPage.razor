@@ -11,63 +11,76 @@
 <PageTitle>@(isEdit ? "Edit Position" : "Add Position")</PageTitle>
 
 <div class="container py-4">
-    <h1 class="h3 text-main mb-4">
-        <strong>@(isEdit ? "Edit Position" : "Add Position")</strong>
-    </h1>
+	
+	@if (!string.IsNullOrEmpty(errorMessage))
+	{
+		<div class="alert alert-danger">@errorMessage</div>
+	}
+	<h1 class="h3 text-main mb-4">
+		<strong>@(isEdit ? "Edit Position" : "Add Position")</strong>
+	</h1>
 
-    <div class="row g-3">
-        <div class="col-md-6">
-            <label class="form-label fw-semibold text-main">NM Number:</label>
-            <input type="text" @bind="nmNumber" class="form-control bg-light" disabled />
-        </div>
+	<div class="row g-3">
+		
+		<div class="col-md-6">
+			<label class="form-label fw-semibold text-main">NM Number:</label>
+			<input type="text" @bind="nmNumber" class="form-control bg-light" disabled/>
+		</div>
 
-        <div class="col-md-6">
-            <label class="form-label fw-semibold text-main">Chromosome:</label>
-            <input type="text" @bind="chromosome" class="form-control bg-light" disabled />
-        </div>
+		
+		<div class="col-md-6">
+			<label class="form-label fw-semibold text-main">Chromosome:</label>
+			<input type="text" @bind="chromosome" class="form-control bg-light" disabled/>
+		</div>
 
-        <div class="col-md-4">
-            <label class="form-label fw-semibold text-main">Position:</label>
-            <input type="text" @bind="position" class="form-control bg-light" disabled="@isEdit" />
-            @if (isEdit)
-            {
-                <small class="text-muted">INSERT ONLY</small>
-            }
-        </div>
+	
+		<div class="col-md-4">
+			<label class="form-label fw-semibold text-main">Position:</label>
+			<input type="text" @bind="position" class="form-control bg-light" disabled="@isEdit"/>
+			@if (isEdit)
+			{
+				<small class="text-muted">INSERT ONLY</small>
+			}
+		</div>
 
-        <div class="col-md-4">
-            <label class="form-label fw-semibold text-main">Reference:</label>
-            <input type="text" @bind="reference" class="form-control" />
-        </div>
+	
+		<div class="col-md-4">
+			<label class="form-label fw-semibold text-main">Reference:</label>
+			<input type="text" @bind="reference" class="form-control"/>
+		</div>
 
-        <div class="col-md-4">
-            <label class="form-label fw-semibold text-main">Alternative:</label>
-            <input type="text" @bind="alternative" class="form-control" />
-        </div>
+	
+		<div class="col-md-4">
+			<label class="form-label fw-semibold text-main">Alternative:</label>
+			<input type="text" @bind="alternative" class="form-control"/>
+		</div>
 
-        <div class="col-md-6">
-            <label class="form-label fw-semibold text-main">Biological Effect:</label>
-            <input type="text" @bind="biologicalEffect" class="form-control" />
-        </div>
+	
+		<div class="col-md-6">
+			<label class="form-label fw-semibold text-main">Biological Effect:</label>
+			<input type="text" @bind="biologicalEffect" class="form-control"/>
+		</div>
 
-        <div class="col-md-6">
-            <label class="form-label fw-semibold text-main">Classification:</label>
-            <input type="text" @bind="classification" class="form-control" />
-        </div>
-    </div>
 
-    <div class="d-flex gap-3 mt-4">
-        <button class="btn btn-main fw-bold" @onclick="HandleSave">SAVE</button>
-        @if (isEdit)
-        {
-            <button class="btn btn-danger fw-bold" @onclick="HandleDelete">REMOVE</button>
-        }
-    </div>
+		<div class="col-md-6">
+			<label class="form-label fw-semibold text-main">Classification:</label>
+			<input type="text" @bind="classification" class="form-control"/>
+		</div>
+	</div>
+
+	<div class="d-flex gap-3 mt-4">
+		<button class="btn btn-main fw-bold" @onclick="HandleSave">SAVE</button>
+		@if (isEdit)
+		{
+			<button class="btn btn-danger fw-bold" @onclick="HandleDelete">REMOVE</button>
+		}
+	</div>
 
 </div>
 
 @code {
-    // Form fields
+
+	private string errorMessage = "";
     private string nmNumber = string.Empty;
     private string chromosome = string.Empty;
     private string position = string.Empty;
@@ -137,35 +150,43 @@
     // Create or update a gene variant
     private async Task HandleSave()
     {
-        var geneVariantRequest = new GeneVariantRequest
-            {
-                NmId = nmNumber,
-                VariantId = variantIdInt ?? 0,
-                Variant = new Variant
-                {
-                    VariantId = 0,
-                    Chromosome = chromosome,
-                    Position = int.TryParse(position, out var posVal) ? posVal : 0,
-                    Reference = reference,
-                    Alternative = alternative,
-                    UserInfo = "standarduser" // Placeholder user
-                },
-                BiologicalEffect = biologicalEffect,
-                Classification = classification,
-                UserInfo = "standarduser" // Placeholder user
-            };
+	    try
+	    {
 
-        if (isEdit)
-        {
-            await Api.UpdatePosition(geneVariantRequest); // Update existing variant
-            StateHasChanged();
-        }
-        else
-        {
-            await Api.CreatePosition(geneVariantRequest); // Create new variant
-        }
+		    var geneVariantRequest = new GeneVariantRequest
+		    {
+			    NmId = nmNumber,
+			    VariantId = variantIdInt ?? 0,
+			    Variant = new Variant
+			    {
+				    VariantId = 0,
+				    Chromosome = chromosome,
+				    Position = int.TryParse(position, out var posVal) ? posVal : 0,
+				    Reference = reference,
+				    Alternative = alternative,
+				    UserInfo = "standarduser" 
+			    },
+			    BiologicalEffect = biologicalEffect,
+			    Classification = classification,
+			    UserInfo = "standarduser" 
+		    };
 
-        Navigation.NavigateTo("/"); // Redirect after save
+		    if (isEdit)
+		    {
+			    await Api.UpdatePosition(geneVariantRequest);
+			    StateHasChanged();
+		    }
+		    else
+		    {
+			    await Api.CreatePosition(geneVariantRequest);
+		    }
+
+		    Navigation.NavigateTo("/");
+	    }
+	    catch (Exception ex)
+	    {
+		    errorMessage = ex.Message;
+	    }
     }
 
     // Delete a variant by ID

@@ -41,6 +41,16 @@ namespace AzDeltaKVT.API.Controllers
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] GeneVariantRequest request)
         {
+
+	        if(request.Variant.Position < request.NmTranscript.Gene.Start)
+	        {
+		        return BadRequest("Position is not bigger or equal to start");
+	        }
+
+            if(request.Variant.Position > request.NmTranscript.Gene.Stop)
+            {
+                return BadRequest("Position is not smaller or equal to stop");
+			}
             var created = await _geneVariantService.Create(request);
             return Ok(created);
         }
