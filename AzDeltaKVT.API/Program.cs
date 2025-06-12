@@ -33,11 +33,11 @@ builder.Services.AddScoped<UploadService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
 	//Set seed to true to seed the database with initial data
-	//Don't forget to set it to false after the first run to duplicates
+	//Don't forget to set it to false after the first run
 	bool seed = false;
 
 	if (seed)

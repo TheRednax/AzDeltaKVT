@@ -34,12 +34,10 @@ namespace AzDeltaKVT.Core
 					.HasForeignKey(e => e.VariantId);
 			});
 		}
-
-		public void Seed()
-		{
-			if (Genes.Any()) return;
-			// Genes (10+)
-			Genes.AddRange(new List<Gene>
+public void Seed()
+{
+if (Genes.Any()) return;
+Genes.AddRange(new List<Gene>
 {
 	new Gene { Name = "SF3B1", Chromosome = "2", Start = 198254508, Stop = 198299817, UserInfo = "From source example" },
 	new Gene { Name = "KIT", Chromosome = "4", Start = 55524124, Stop = 55606881, UserInfo = "From source example" },
@@ -53,8 +51,7 @@ namespace AzDeltaKVT.Core
 	new Gene { Name = "KRAS", Chromosome = "5", Start = 25200000, Stop = 25250000, UserInfo = "Added gene" }
 });
 
-			// NmTranscripts (10+)
-			NmTranscripts.AddRange(new List<NmTranscript>
+NmTranscripts.AddRange(new List<NmTranscript>
 {
 	new NmTranscript { NmNumber = "NM_012433.3", GeneId = "SF3B1", IsInHouse = true, IsSelect = true, IsClinical = false },
 	new NmTranscript { NmNumber = "NM_000222.2", GeneId = "KIT", IsInHouse = true, IsSelect = true, IsClinical = false },
@@ -68,8 +65,7 @@ namespace AzDeltaKVT.Core
 	new NmTranscript { NmNumber = "NM_004119.2", GeneId = "FLT3", IsInHouse = true, IsSelect = false, IsClinical = false }
 });
 
-			// Variants (same as before)
-			Variants.AddRange(new List<Variant>
+Variants.AddRange(new List<Variant>
 {
 	new Variant {Chromosome = "2", Position = 198255000, Reference = "G", Alternative = "A", UserInfo = "Example for SF3B1" },
 	new Variant {Chromosome = "4", Position = 55525000, Reference = "T", Alternative = "C", UserInfo = "Example for KIT 1" },
@@ -104,42 +100,28 @@ namespace AzDeltaKVT.Core
 
 			SaveChanges();
 
-			// GeneVariants with random effects, classifications, and info; no manual VariantId
 			var random = new Random();
-
 			var effects = new[] { "No effect", "Missense mutation", "Nonsense mutation", "Frameshift", "Splice site" };
 			var classifications = new[] { "Benign", "Likely benign", "Uncertain significance", "Likely pathogenic", "Pathogenic" };
 			var infos = new[] { "ClinVar", "Literature", "In-house", "Hospital data", "To be reviewed" };
-
 			var geneVariants = new List<GeneVariant>();
-
 			for (int i = 0; i < Variants.Count(); i++)
 			{
 				var variant = Variants.ToList()[i];
-
-				// Find transcript with matching gene/chromosome, else pick a random transcript
 				var matchingTranscript = NmTranscripts
 					.FirstOrDefault(nm => Genes.Any(g => g.Name == nm.GeneId && g.Chromosome == variant.Chromosome));
-
 				var transcript = matchingTranscript ?? NmTranscripts.ToList()[random.Next(NmTranscripts.Count())];
-
 				geneVariants.Add(new GeneVariant
 				{
 					NmId = transcript.NmNumber,
-					VariantId = i + 1,  // Unique VariantId assigned by index + 1
+					VariantId = i + 1, 
 					BiologicalEffect = effects[random.Next(effects.Length)],
 					Classification = classifications[random.Next(classifications.Length)],
 					UserInfo = infos[random.Next(infos.Length)]
 				});
 			}
-
-			
 			GeneVariants.AddRange(geneVariants);
-
 			SaveChanges();
 		}
-
-
-
 	}
 }

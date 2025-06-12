@@ -11,13 +11,14 @@ namespace AzDeltaKVT.Services
 {
     public class VariantService
     {
-        private readonly AzDeltaKVTDbContext _context;       
+        private readonly AzDeltaKVTDbContext _context;
 
         public VariantService(AzDeltaKVTDbContext context)
         {
             _context = context;
         }
 
+        // Retrieve all variants from the database
         public async Task<IList<VariantResult>> Find()
         {
             var query = _context.Variants
@@ -34,6 +35,7 @@ namespace AzDeltaKVT.Services
             return await query.ToListAsync();
         }
 
+        // Get a specific variant by ID or by chromosome and position
         public async Task<VariantResult> Get(VariantRequest request)
         {
             var query = _context.Variants.AsQueryable();
@@ -50,7 +52,7 @@ namespace AzDeltaKVT.Services
             }
             else
             {
-                return new VariantResult(); // No valid filter
+                return new VariantResult(); // No valid filter provided
             }
 
             var result = await query
@@ -68,6 +70,7 @@ namespace AzDeltaKVT.Services
             return result ?? new VariantResult();
         }
 
+        // Create a new variant
         public async Task<VariantResult> Create(VariantRequest request)
         {
             var variant = new Variant
@@ -93,6 +96,7 @@ namespace AzDeltaKVT.Services
             };
         }
 
+        // Update an existing variant
         public async Task<VariantResult> Update(VariantRequest request)
         {
             var existing = await _context.Variants.FindAsync(request.VariantId);
@@ -118,6 +122,7 @@ namespace AzDeltaKVT.Services
             };
         }
 
+        // Delete a variant by ID
         public async Task<bool> Delete(int id)
         {
             var variant = await _context.Variants.FindAsync(id);
@@ -129,16 +134,17 @@ namespace AzDeltaKVT.Services
             return true;
         }
 
+        // Add a variant to a transcript, creating the variant if it doesn't exist
         public async Task<AddVariantToTranscriptResult> AddVariantToTranscript(string nmNumber, AddVariantToTranscriptRequest request)
         {
-            // 1. Check transcript exists
+            // Check if transcript exists
             var transcript = await _context.NmTranscripts
                 .Include(t => t.Gene)
                 .FirstOrDefaultAsync(t => t.NmNumber == nmNumber);
             if (transcript == null)
                 throw new ArgumentException($"Transcript {nmNumber} not found");
 
-            // 2. Check/Create variant
+            // Check if variant exists already
             var existingVariant = await _context.Variants
                 .FirstOrDefaultAsync(v =>
                     v.Chromosome == request.Chromosome &&
@@ -148,6 +154,7 @@ namespace AzDeltaKVT.Services
             int variantId;
             bool variantWasCreated = false;
 
+            // Create new variant if not found
             if (existingVariant != null)
             {
                 variantId = existingVariant.VariantId;
@@ -168,14 +175,14 @@ namespace AzDeltaKVT.Services
                 variantWasCreated = true;
             }
 
-            // 3. Check existing GeneVariant
+            // Check if GeneVariant already exists
             var existingGeneVariant = await _context.GeneVariants
                 .FirstOrDefaultAsync(gv => gv.NmId == nmNumber && gv.VariantId == variantId);
 
             if (existingGeneVariant != null)
                 throw new ArgumentException($"This variant is already linked to transcript {nmNumber}");
 
-            // 4. Create GeneVariant directly (like Get method pattern)
+            // Create GeneVariant linking the variant to the transcript
             var geneVariant = new GeneVariant
             {
                 NmId = nmNumber,
@@ -188,7 +195,7 @@ namespace AzDeltaKVT.Services
             _context.GeneVariants.Add(geneVariant);
             await _context.SaveChangesAsync();
 
-            // 5. Return simple result (like Get method pattern)
+            // Return result indicating success
             return new AddVariantToTranscriptResult
             {
                 VariantWasCreated = variantWasCreated,
@@ -207,4 +214,3 @@ namespace AzDeltaKVT.Services
         }
     }
 }
-
