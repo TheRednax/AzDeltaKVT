@@ -25,7 +25,6 @@
     }
     else if (currentGene != null)
     {
-        <!-- Gene Information Section -->
         <section class="mb-5">
             <h1 class="h3 text-main mb-4"><strong>Gene page</strong></h1>
 
@@ -67,7 +66,6 @@
             </div>
         </section>
 
-        <!-- Known Positions Section -->
         <section class="mb-5">
             <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
                 <h1 class="h5 text-main m-0">Gene positions</h1>
@@ -135,29 +133,35 @@
 </div>
 
 @code {
+    // Parameters supplied via query string
     [Parameter, SupplyParameterFromQuery] public string? Name { get; set; }
     [Parameter, SupplyParameterFromQuery] public string? Nm { get; set; }
 
+    // State flags for UI feedback
     private bool isLoading = true;
     private bool hasError = false;
     private string errorMessage = "";
 
+    // Current loaded gene and transcript details
     private GeneResult? currentGene;
     private NmTranscriptResult? currentTranscript;
 
-    // Eén lijst met alles wat je nodig hebt: GeneVariants inclusief Variant info (positie etc)
+    // List of gene variants including variant information such as position
     private List<GeneVariantResult> geneVariants = new();
 
+    // On component initialization, load gene data
     protected override async Task OnInitializedAsync()
     {
         await LoadGeneData();
     }
 
+    // Reload data when parameters change (e.g. query string updates)
     protected override async Task OnParametersSetAsync()
     {
         await LoadGeneData();
     }
 
+    // Main method to load gene-related data
     private async Task LoadGeneData()
     {
         if (string.IsNullOrEmpty(Name))
@@ -174,14 +178,16 @@
 
         try
         {
+            // Load transcript info if Nm parameter is provided
             if (!string.IsNullOrEmpty(Nm))
             {
                 await LoadTranscript();
             }
 
+            // Load gene details
             await LoadGene();
 
-            // Haal nu alle GeneVariants op die horen bij dit Nm nummer (transcript)
+            // Load all gene variants related to the current Nm (transcript)
             await LoadGeneVariants();
         }
         catch (Exception ex)
@@ -195,6 +201,7 @@
         }
     }
 
+    // Load gene data by name from API
     private async Task LoadGene()
     {
         if (currentGene == null)
@@ -208,29 +215,34 @@
         }
     }
 
+    // Load transcript data by NM number
     private async Task LoadTranscript()
     {
         if (string.IsNullOrEmpty(Nm)) return;
+
         currentTranscript = await Api.GetTranscriptAsync(Nm);
 
+        // If gene is not loaded but transcript contains gene info, load gene data
         if (currentTranscript?.Gene != null && currentGene == null)
         {
             currentGene = await Api.GetGeneByNameAsync(currentTranscript.Gene.Name);
         }
     }
 
+    // Load gene variants filtered by NM number
     private async Task LoadGeneVariants()
     {
         if (string.IsNullOrEmpty(Nm))
         {
-            geneVariants = new List<GeneVariantResult>();
+            geneVariants = new List<GeneVariantResult>(); // Clear list if no Nm given
             return;
         }
 
-        // Haal alle gene variants op via de API, gefilterd op NmId (jouw API doet dat)
+        // Retrieve all gene variants for the specified Nm number from API
         geneVariants = await Api.GetPositionsFromNm(Nm);
     }
 
+    // Navigate to the details page of a specific variant position
     private void NavigateToPositionPage(int variantId)
     {
         var variant = geneVariants.FirstOrDefault(gv => gv.Variant?.VariantId == variantId)?.Variant;
@@ -241,15 +253,18 @@
         }
         else
         {
+            // Fallback navigation if position is unavailable
             Navigation.NavigateTo($"/position?id={variantId}");
         }
     }
 
+    // Navigate to the page for adding a new transcript to the current gene
     private void NavigateToAddTranscript()
     {
         Navigation.NavigateTo($"/gene/edit/{Uri.EscapeDataString(Name!)}");
     }
 
+    // Navigate to the gene editing page, optionally including the transcript NM number
     private void NavigateToEditGene()
     {
         if (!string.IsNullOrEmpty(Nm))
@@ -262,6 +277,7 @@
         }
     }
 
+    // Navigate to the page to insert a new variant position
     private void NavigateToInsertPosition()
     {
         var url = $"/position/edit?geneName={Uri.EscapeDataString(Name!)}";

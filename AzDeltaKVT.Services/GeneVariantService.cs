@@ -18,6 +18,7 @@ namespace AzDeltaKVT.Services
             _context = context;
         }
 
+        // Get all gene variants, including related variant and transcript data
         public async Task<IList<GeneVariant>> Find()
         {
             return await _context.GeneVariants
@@ -27,6 +28,7 @@ namespace AzDeltaKVT.Services
                 .ToListAsync();
         }
 
+        // Get a specific gene variant by variant ID or NM ID
         public async Task<GeneVariant?> Get(string nmId, int variantId)
         {
             if (variantId > 0)
@@ -38,20 +40,21 @@ namespace AzDeltaKVT.Services
             }
             else if (!string.IsNullOrEmpty(nmId))
             {
-                // You could try to find the first variant for that NmId (or add more filters if needed)
+                // Get the first gene variant for the given NM ID (can be adjusted with more filters)
                 return await _context.GeneVariants
                     .Include(gv => gv.Variant)
                     .Include(gv => gv.NmTranscript)
                     .Where(gv => gv.NmId == nmId)
-                    .OrderBy(gv => gv.VariantId) // or order by something meaningful
+                    .OrderBy(gv => gv.VariantId)
                     .FirstOrDefaultAsync();
             }
 
             return null;
         }
+
+        // Create a new gene variant, including the underlying variant
         public async Task<GeneVariantResult> Create(GeneVariantRequest request)
         {
-            // 1. Maak eerst de Variant aan
             var variant = new Variant
             {
                 Chromosome = request.Variant.Chromosome,
@@ -59,17 +62,15 @@ namespace AzDeltaKVT.Services
                 Reference = request.Variant.Reference,
                 Alternative = request.Variant.Alternative,
                 UserInfo = request.Variant.UserInfo
-
             };
 
             _context.Variants.Add(variant);
-            await _context.SaveChangesAsync(); // Slaat Variant op en genereert VariantId
+            await _context.SaveChangesAsync();
 
-            // 2. Koppel deze variant aan een nieuwe GeneVariant
             var geneVariant = new GeneVariant
             {
                 NmId = request.NmId,
-                VariantId = variant.VariantId, // FK-relatie
+                VariantId = variant.VariantId,
                 BiologicalEffect = request.BiologicalEffect,
                 Classification = request.Classification,
                 UserInfo = request.UserInfo
@@ -78,7 +79,6 @@ namespace AzDeltaKVT.Services
             _context.GeneVariants.Add(geneVariant);
             await _context.SaveChangesAsync();
 
-            // 3. Geef de response terug
             return new GeneVariantResult
             {
                 VariantId = geneVariant.VariantId,
@@ -90,16 +90,17 @@ namespace AzDeltaKVT.Services
             };
         }
 
-
+        // Update an existing gene variant and its associated variant data
         public async Task<bool> Update(GeneVariantRequest request)
         {
             var existing = await Get(request.NmId, request.VariantId);
             if (existing == null) return false;
 
-            // Reattach it so EF can track again
+            // Re-attach to enable EF Core tracking
             _context.Attach(existing);
             _context.Entry(existing).State = EntityState.Modified;
 
+            // Update variant fields if available
             if (existing.Variant != null)
             {
                 _context.Attach(existing.Variant);
@@ -112,6 +113,7 @@ namespace AzDeltaKVT.Services
                 existing.Variant.UserInfo = request.Variant.UserInfo;
             }
 
+            // Update gene variant fields
             existing.BiologicalEffect = request.BiologicalEffect;
             existing.Classification = request.Classification;
             existing.UserInfo = request.UserInfo;
@@ -120,24 +122,26 @@ namespace AzDeltaKVT.Services
             return true;
         }
 
+        // Delete a gene variant and its associated variant if they exist
         public async Task<bool> Delete(GeneVariantRequest request)
         {
             var existing = await Get(request.NmId, request.VariantId);
             if (existing == null) return false;
 
-            // Remove linked Variant entity
+            // Remove the associated variant entity
             if (existing.Variant != null)
             {
                 _context.Variants.Remove(existing.Variant);
             }
 
-            // Remove the GeneVariant entity
+            // Remove the gene variant itself
             _context.GeneVariants.Remove(existing);
 
             await _context.SaveChangesAsync();
             return true;
         }
 
+        // Get a gene variant by its variant ID only
         public async Task<GeneVariant?> GetByVariantId(int variantId)
         {
             return await _context.GeneVariants
