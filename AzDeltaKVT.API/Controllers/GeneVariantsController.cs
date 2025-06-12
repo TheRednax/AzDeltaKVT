@@ -53,10 +53,23 @@ namespace AzDeltaKVT.API.Controllers
             return Ok(updated);
         }
 
-        // DELETE /genevariants/delete
-        [HttpDelete("delete")]
-        public async Task<IActionResult> Delete([FromBody] GeneVariantRequest request)
+        // DELETE /genevariants/delete/{variantId}
+        [HttpDelete("delete/{variantId}")]
+        public async Task<IActionResult> Delete(int variantId)
         {
+            var geneVariant = await _geneVariantService.GetByVariantId(variantId); // ✅ Add this service method
+
+            if (geneVariant == null)
+            {
+                return NotFound($"Geen gene variant gevonden met VariantId {variantId}");
+            }
+
+            var request = new GeneVariantRequest
+            {
+                NmId = geneVariant.NmId,
+                VariantId = geneVariant.VariantId
+            };
+
             var deleted = await _geneVariantService.Delete(request);
             return Ok(deleted);
         }
