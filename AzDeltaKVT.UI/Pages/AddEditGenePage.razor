@@ -255,6 +255,11 @@
 	        errorMessage = "Stop Should be bigger than 0";
 	        return;
         }
+        if (stop < start)
+        {
+	        errorMessage = "Start should be bigger than stop";
+	        return;
+        }
 
         isSaving = true;
         errorMessage = "";
