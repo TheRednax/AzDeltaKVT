@@ -587,6 +587,17 @@ namespace AzDeltaKVT.UI.Services
             {
                 var error = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"API Error: {response.StatusCode} - {error}");
+                if (error.Contains("Position is not bigger"))
+                {
+                    
+	                throw new Exception("Failed to create position: Position is not bigger or equal to start");
+                }
+                else if (error.Contains("Position is not smaller"))
+                {
+                    
+	                throw new Exception("Failed to create gene: Position is not smaller or equal to stop");
+                }
+
                 throw new Exception($"Aanmaken mislukt: {error}");
             }
         }
