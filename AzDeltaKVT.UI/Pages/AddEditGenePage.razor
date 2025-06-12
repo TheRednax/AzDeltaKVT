@@ -39,10 +39,10 @@
 
     <div class="col-md-6">
         <label class="form-label fw-semibold text-main">NM Number:</label>
-        <input type="text" @bind="nmNumber" disabled="@(IsEditMode || IsAddingTranscriptMode)"
-               class="form-control @((IsEditMode || IsAddingTranscriptMode) ? "bg-light" : "")"
+        <input type="text" @bind="nmNumber" disabled="@(IsEditMode)"
+               class="form-control @((IsEditMode) ? "bg-light" : "")"
                placeholder="Enter NM number here (example: NM_000222.2)" />
-        @if (IsEditMode || IsAddingTranscriptMode) { <small class="text-muted">INSERT ONLY</small> }
+        @if (IsEditMode) { <small class="text-muted">INSERT ONLY</small> }
     </div>
 
     <div class="col-md-4">
