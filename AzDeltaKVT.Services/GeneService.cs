@@ -188,11 +188,19 @@ namespace AzDeltaKVT.Services
 
         private async Task<List<Variant>> GetVariantsForGene(Gene gene)
         {
-            return await _context.Variants
-                .Where(v => v.Chromosome == gene.Chromosome &&
-                            v.Position >= gene.Start &&
-                            v.Position <= gene.Stop)
-                .ToListAsync();
+            var nmTranscripts = await _context.NmTranscripts.Where(t => t.GeneId == gene.Name).ToListAsync();
+            var variants = new List<Variant>();
+			foreach (var nmTranscript in nmTranscripts)
+            {
+	            var var = await _context.GeneVariants.Include(gv => gv.Variant)
+                    .Where(gv => gv.NmId == nmTranscript.NmNumber)
+                    .Select(gv => gv.Variant)
+                    .ToListAsync();
+
+	            variants.AddRange(var);
+			}
+
+			return variants;
         }
 
         private async Task<List<Variant>> GetRelevantVariants(Gene gene, GeneRequest request)
