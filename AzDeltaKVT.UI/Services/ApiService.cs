@@ -472,12 +472,46 @@ namespace AzDeltaKVT.UI.Services
         {
             Console.WriteLine($"UpdatePosition called with: NmId={request.NmId}, VariantId={request.VariantId}");
 
+            // 🧠 Add NmTranscript logic before sending to the API
+            var genes = await SearchGenesAsync(nmNumber: request.NmId);
+            if (genes == null || !genes.Any())
+            {
+                throw new Exception($"Geen gen gevonden voor NM number {request.NmId}");
+            }
+
+            var gene = genes.First();
+            var transcripts = GetTranscriptsFromGene(gene);
+            var selectedTranscript = transcripts.FirstOrDefault(t => t.NmNumber == request.NmId);
+
+            if (selectedTranscript == null)
+            {
+                throw new Exception($"Geen transcript gevonden voor NM number {request.NmId}");
+            }
+
+            request.NmTranscript = new NmTranscript
+            {
+                NmNumber = selectedTranscript.NmNumber,
+                GeneId = selectedTranscript.GeneId,
+                IsSelect = selectedTranscript.IsSelect,
+                IsClinical = selectedTranscript.IsClinical,
+                IsInHouse = selectedTranscript.IsInHouse,
+                Gene = new Gene
+                {
+                    Name = gene.Name,
+                    Chromosome = gene.Chromosome,
+                    Start = gene.Start,
+                    Stop = gene.Stop,
+                    UserInfo = gene.UserInfo
+                }
+            };
+
+            // ✅ Serialize after enriching the request
             var json = JsonSerializer.Serialize(request, _jsonOptions);
             Console.WriteLine($"Update Position Request JSON: {json}");
 
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.PutAsync("/variants/update", content);
+            var response = await _httpClient.PutAsync("/genevariants/update", content);
             Console.WriteLine($"Update Position Response status: {response.StatusCode}");
 
             if (response.IsSuccessStatusCode)
@@ -492,7 +526,6 @@ namespace AzDeltaKVT.UI.Services
                 throw new Exception($"Failed to update position: {error}");
             }
         }
-
 
         public async Task<bool> CreatePosition(GeneVariantRequest request)
         {
@@ -615,7 +648,24 @@ namespace AzDeltaKVT.UI.Services
                 throw new Exception($"Failed to get position: {error}");
             }
         }
+        public async Task<bool> DeletePosition(int? variantId)
+        {
+            if (variantId == null)
+                throw new ArgumentNullException(nameof(variantId), "variantId mag niet null zijn.");
 
+            var response = await _httpClient.DeleteAsync($"/genevariants/delete/{variantId}");
 
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"✅ Variant {variantId} succesvol verwijderd.");
+                return true;
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"❌ Fout bij verwijderen: {response.StatusCode} - {error}");
+                throw new Exception($"Verwijderen mislukt: {error}");
+            }
+        }
     }
 }

@@ -67,7 +67,7 @@
         <button class="btn btn-main fw-bold" @onclick="HandleSave">SAVE</button>
         @if (isEdit)
         {
-            <button class="btn btn-danger fw-bold">REMOVE</button>
+            <button class="btn btn-danger fw-bold" @onclick="HandleDelete">REMOVE</button>
         }
     </div>
 
@@ -81,7 +81,8 @@
     private string alternative = string.Empty;
     private string biologicalEffect = string.Empty;
     private string classification = string.Empty;
-	private string variantId = string.Empty; 
+    private string variantId = string.Empty;
+    private int? variantIdInt = null;
 
     private bool isEdit = false;
 
@@ -101,14 +102,14 @@
             chromosome = chr;
         }
 
-        if (queryParams.TryGetValue("variantId", out var var))
+        if (queryParams.TryGetValue("variantId", out var varIdStr) && int.TryParse(varIdStr, out var parsedId))
         {
-            variantId = var;
+            variantId = varIdStr;
+            variantIdInt = parsedId; // ✅ Store parsed value
             isEdit = true;
-            await GetPositionInfo(); // Hier roep je de functie aan
+            await GetPositionInfo();
         }
     }
-
 
     private async Task GetPositionInfo()
     {
@@ -141,7 +142,7 @@
         var geneVariantRequest = new GeneVariantRequest
             {
                 NmId = nmNumber,
-                VariantId = 0,
+                VariantId = variantIdInt ?? 0,
                 Variant = new Variant
                 {
                     VariantId = 0,
@@ -159,6 +160,7 @@
         if (isEdit)
         {
             await Api.UpdatePosition(geneVariantRequest);
+            StateHasChanged();
         }
         else
         {
@@ -168,7 +170,14 @@
         Navigation.NavigateTo("/");
     }
 
-
+    private async Task HandleDelete()
+    {
+        if (variantIdInt.HasValue)
+        {
+            await Api.DeletePosition(variantIdInt);
+            Navigation.NavigateTo("/");
+        }
+    }
 
 }
 
