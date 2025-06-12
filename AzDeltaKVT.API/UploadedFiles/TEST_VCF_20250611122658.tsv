@@ -1,0 +1,51 @@
+Chromosome	Position	Reference	Alternative	GeneName	NmNumber	IsInHouse	BiologicalEffect	Classification
+chr2	25463483	G	A					
+chr2	25466888	G	T					
+chr1	36933581	T	C					
+3	38181966	A	G	DNMT3A	NM_022552.4	True	Splice site	Benign
+chr1	43815071	T	G					
+7	50358574	ATC	A	FLT3	NM_004119.2	True	Frameshift	Benign
+7	50435616	TA	T	FLT3	NM_004119.2	True	Nonsense mutation	Pathogenic
+7	50435777	T	G	FLT3	NM_004119.2	True	Nonsense mutation	Pathogenic
+chr7	50436033	A	G					
+7	50444181	GT	G	FLT3	NM_004119.2	True	Nonsense mutation	Pathogenic
+7	50444181	GT	G	FLT3	NM_004119.2	True	Nonsense mutation	Pathogenic
+7	50444181	GT	G	FLT3	NM_004119.2	True	Nonsense mutation	Pathogenic
+7	50459588	TA	T	FLT3	NM_004119.2	True	No effect	Uncertain significance
+7	50459588	TA	T	FLT3	NM_004119.2	True	No effect	Uncertain significance
+chr7	50468382	T	C					
+chr7	50468396	T	C					
+4	55524252	G	A	KIT	NM_000222.2	True	Splice site	Pathogenic
+chr4	55599436	T	C					
+4	55599444	A	G	KIT	NM_000222.2	True	Frameshift	Benign
+4	106155911	C	G	KIT	NM_000222.2	True	Splice site	Benign
+chr4	106156288	ACAC	A					
+4	106163960	ATG	A	KIT	NM_000222.2	True	Frameshift	Uncertain significance
+4	106196281	CCAG	C	KIT	NM_000222.2	True	Nonsense mutation	Likely benign
+chr4	106196299	CCAG	C					
+chr4	106196951	A	G					
+3	128200629	A	G	DNMT3A	NM_022552.4	True	Missense mutation	Benign
+chr7	140434294	T	TA					
+chr7	140434294	TA	T					
+7	148504716	AG	A	FLT3	NM_004119.2	True	Nonsense mutation	Likely pathogenic
+7	148506396	A	C	FLT3	NM_004119.2	True	Splice site	Pathogenic
+chr7	148508833	A	G					
+7	148525804	T	C	FLT3	NM_004119.2	True	Splice site	Pathogenic
+7	148525888	CCAT	C	FLT3	NM_004119.2	True	Missense mutation	Pathogenic
+chr7	148526947	GA	G					
+chr5	170837457	A	G					
+5	170837513	CTT	C	NPM1	NM_002520.6	True	Missense mutation	Pathogenic
+5	170837513	CTT	C	NPM1	NM_002520.6	True	Missense mutation	Pathogenic
+5	170837513	CTT	C	NPM1	NM_002520.6	True	Missense mutation	Pathogenic
+5	170837513	CTT	C	NPM1	NM_002520.6	True	Missense mutation	Pathogenic
+5	170837513	CTT	C	NPM1	NM_002520.6	True	Missense mutation	Pathogenic
+chr2	198265170	AT	A					
+chr2	198265172	T	TA					
+chr2	198265173	T	A					
+chr2	198265526	A	G					
+chr2	198266476	AT	A					
+chr2	198266943	C	T					
+2	198267369	G	A	SF3B1	NM_012433.3	True	Nonsense mutation	Likely benign
+2	209113048	GA	G	SF3B1	NM_012433.3	True	Missense mutation	Pathogenic
+2	209113048	GA	G	SF3B1	NM_012433.3	True	Missense mutation	Pathogenic
+2	209113192	G	A	SF3B1	NM_012433.3	True	Frameshift	Likely pathogenic

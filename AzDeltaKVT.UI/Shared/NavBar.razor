@@ -1,8 +1,29 @@
 ﻿<nav class="d-flex align-items-center justify-content-between px-4 py-2 border-bottom shadow-sm">
     <div class="d-flex align-items-center gap-3">
-        <a href="/">
-            <img src="azdelta-logo.svg" alt="AZ Delta logo" style="height: 50px;" />
+        <a href="/" class="me-4">
+            <img src="azdelta-logo.svg" alt="AZ Delta logo" style="height: 80px;" />
         </a>
+
+        <a href="/" class="fw-bold text-main text-decoration-none">Home</a>
+
+        <a href="#" @onclick="NavigateToAddGene"
+           class="fw-bold text-main text-decoration-none"
+           style="cursor: pointer; transition: background-color 0.2s;">
+	        Add Gene
+        </a>
+
     </div>
+
     <h1 class="h5 fw-bold text-main mb-0"><strong>AZ Delta KVT</strong></h1>
 </nav>
+
+
+@code {
+    [Inject] NavigationManager Navigation { get; set; }
+
+    private void NavigateToAddGene()
+    {
+        Navigation.NavigateTo("/gene/edit");
+    }
+}
+

@@ -26,6 +26,10 @@
     }
     else
     {
+
+        <button class="btn btn-primary mb-3" @onclick="NavigateToEditPosition">
+            Edit Position
+        </button>
         <!-- Position Information Section -->
         <section class="mb-5">
             <h2 class="h5 text-main mb-3">Position Information</h2>
@@ -129,7 +133,7 @@
 
                                 <div class="ms-3">
                                     <button type="button" @onclick="() => EditTranscript(transcript)"
-                                            class="btn btn-main fw-bold">
+                                    class="btn btn-main fw-bold">
                                         EDIT
                                     </button>
                                 </div>
@@ -277,6 +281,7 @@
             {
                 Reference = matchingVariant.Reference ?? "";
                 Alternative = matchingVariant.Alternative ?? "";
+                Id = matchingVariant.VariantId;
                 Console.WriteLine($"Found variant: Reference={Reference}, Alternative={Alternative}");
             }
             else
@@ -361,7 +366,8 @@
 
     private GeneVariantResult? GetGeneVariantForTranscript(string nmNumber)
     {
-        return GeneVariants.FirstOrDefault(gv => gv.NmTranscript?.NmNumber == nmNumber);
+        var geneVariant = GeneVariants.FirstOrDefault(gv => gv.NmId == nmNumber);
+        return geneVariant;
     }
 
     private int GetSortPriority(NmTranscriptResult transcript)
@@ -400,5 +406,14 @@
     {
         // Navigate to edit page for this specific transcript
         Navigation.NavigateTo($"/gene/edit/{Uri.EscapeDataString(GeneName)}/{Uri.EscapeDataString(transcript.NmNumber)}");
+    }
+
+
+
+    private void NavigateToEditPosition()
+    {
+        string idString = Id?.ToString() ?? string.Empty;  // Convertimos a string y si es null ponemos string vacío
+        var url = $"/position/edit?variantId={Uri.EscapeDataString(idString)}";
+        Navigation.NavigateTo(url);
     }
 }
