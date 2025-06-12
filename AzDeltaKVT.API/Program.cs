@@ -34,10 +34,17 @@ builder.Services.AddScoped<UploadService>();
 
 var app = builder.Build();
 
-using var scope = app.Services.CreateScope();
-var context = scope.ServiceProvider.GetRequiredService<AzDeltaKVTDbContext>();
 
-context.Database.EnsureCreated();
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<AzDeltaKVTDbContext>();
+    context.Database.Migrate();
+
+    if (!context.Genes.Any())
+    {
+        context.Seed();
+    }
+}
 
 if (app.Environment.IsDevelopment())
 {
