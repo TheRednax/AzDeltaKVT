@@ -14,11 +14,15 @@ namespace AzDeltaKVT.API.Controllers
 	{
 		private readonly GeneService _geneService;
 		private readonly TranscriptService _transcriptService;
+		private readonly VariantService _variantService;
+		private readonly GeneVariantService _geneVariantService;
 
-		public GenesController(GeneService geneService, TranscriptService transcriptService)
+		public GenesController(GeneService geneService, TranscriptService transcriptService, VariantService variantService, GeneVariantService geneVariantService)
 		{
 			_geneService = geneService;
 			_transcriptService = transcriptService;
+			_variantService = variantService;
+			_geneVariantService = geneVariantService;
 		}
 
 		// GET /genes
@@ -86,6 +90,23 @@ namespace AzDeltaKVT.API.Controllers
 		[HttpDelete("delete")]
 		public async Task<IActionResult> Delete([FromBody] string name)
 		{
+			var transcripts = await _transcriptService.Find();
+			var transcript = transcripts.FirstOrDefault(t => t.GeneId == name);
+			var nmNumber = transcript.NmNumber;
+			var geneVariants = await _geneVariantService.Find();
+			var geneVariantTranscripts = geneVariants.Where(gv => gv.NmId == nmNumber).ToList();
+			if (transcript == null || !geneVariantTranscripts.Any())
+			{
+				return BadRequest("Transcript cannot be deleted because it is associated with a gene variant.");
+			}
+
+			foreach (var geneVariant in geneVariantTranscripts)
+			{
+				await _variantService.Delete(geneVariant.VariantId);
+				await _geneVariantService.Delete(new GeneVariantRequest
+					{ VariantId = geneVariant.VariantId, NmId = nmNumber });
+			}
+
 			var deleted = await _geneService.Delete(name);
 			return Ok(deleted);
 		}
