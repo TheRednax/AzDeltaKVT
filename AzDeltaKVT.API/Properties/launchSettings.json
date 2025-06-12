@@ -15,17 +15,6 @@
       },
       "dotnetRunMessages": true,
       "applicationUrl": "https://localhost:7017;http://localhost:5260"
-    },
-    "Container (Dockerfile)": {
-      "commandName": "Docker",
-      "publishAllPorts": false,
-      "dockerRunOptions": "-p 32771:8080 -p 32772:8081",
-      "launchUrl": "{Scheme}://localhost:32771",
-      "useSSL": true,
-      "environmentVariables": {
-        "ASPNETCORE_HTTPS_PORTS": "8081",
-        "ASPNETCORE_HTTP_PORTS": "8080"
-      }
     }
   },
   "$schema": "https://json.schemastore.org/launchsettings.json"

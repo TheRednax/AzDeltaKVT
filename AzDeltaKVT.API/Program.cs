@@ -3,6 +3,7 @@ using AzDeltaKVT.Core;
 using AzDeltaKVT.Dto.Requests;
 using AzDeltaKVT.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +19,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddDbContext<AzDeltaKVTDbContext>(options =>
-	options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -33,22 +34,13 @@ builder.Services.AddScoped<UploadService>();
 
 var app = builder.Build();
 
-// HTTP request pipeline.
+using var scope = app.Services.CreateScope();
+var context = scope.ServiceProvider.GetRequiredService<AzDeltaKVTDbContext>();
+
+context.Database.EnsureCreated();
+
 if (app.Environment.IsDevelopment())
 {
-	//Set seed to true to seed the database with initial data
-	//Don't forget to set it to false after the first run
-	bool seed = false;
-
-	if (seed)
-	{
-		using (var scope = app.Services.CreateScope())
-		{
-			var context = scope.ServiceProvider.GetRequiredService<AzDeltaKVTDbContext>();
-			context.Seed();
-		}
-	}
-
     app.UseSwagger();
     app.UseSwaggerUI();
 }

@@ -1,0 +1,37 @@
+version: '3.9'
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    environment:
+      - SA_PASSWORD=Vives2023!
+      - ACCEPT_EULA=Y
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserverdata:/var/opt/mssql
+
+  api:
+    build:
+      context: .
+      dockerfile: AzDeltaKVT.API/Dockerfile
+    depends_on:
+      - db
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=VoortgangstoetsDb;User Id=sa;Password=Vives2023!;TrustServerCertificate=True;
+    ports:
+      - "8080:8080"
+    command: ["sh", "-c", "sleep 30 && dotnet AzDeltaKVT.API.dll"]
+
+  ui:
+    build:
+      context: .
+      dockerfile: AzDeltaKVT.UI/Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+
+volumes:
+  sqlserverdata:
