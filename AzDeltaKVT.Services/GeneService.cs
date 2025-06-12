@@ -2,6 +2,7 @@
 using AzDeltaKVT.Core;
 using AzDeltaKVT.Dto.Requests;
 using AzDeltaKVT.Dto.Results;
+using Azure.Core;
 using Microsoft.EntityFrameworkCore;
 
 namespace AzDeltaKVT.Services
@@ -15,6 +16,7 @@ namespace AzDeltaKVT.Services
             _context = context;
         }
 
+        // Retrieves all genes with their sorted transcripts and associated variants.
         public async Task<IList<GeneResult>> Find()
         {
             var genes = await _context.Genes.OrderBy(g => g.Name).ToListAsync();
@@ -31,6 +33,7 @@ namespace AzDeltaKVT.Services
             return results;
         }
 
+        //Retrieves genes filtered by the given request parameters, along with relevant transcripts and variants.
         public async Task<IList<GeneResult>> Get(GeneRequest request)
         {
             var genes = await FilterGenes(request);
@@ -48,6 +51,7 @@ namespace AzDeltaKVT.Services
             return results;
         }
 
+        //Creates a new gene and its associated transcript using the provided request data.
         public async Task<GeneResult> Create(GeneRequest request)
         {
             var gene = new Gene
@@ -77,6 +81,7 @@ namespace AzDeltaKVT.Services
             return BuildGeneResult(gene, new List<NmTranscript> { transcript }, new List<Variant>());
         }
 
+        //Updates an existing gene and its transcript based on the request data. Returns null if not found.
         public async Task<GeneResult?> Update(GeneRequest request)
         {
             var gene = await _context.Genes.FindAsync(request.Name);
@@ -101,6 +106,7 @@ namespace AzDeltaKVT.Services
             return BuildGeneResult(gene, new List<NmTranscript> { transcript }, new List<Variant>());
         }
 
+        // Deletes the gene with the specified name. Returns false if the gene does not exist.
         public async Task<bool> Delete(string name)
         {
             var gene = await _context.Genes.FindAsync(name);
@@ -111,13 +117,13 @@ namespace AzDeltaKVT.Services
             return true;
         }
 
+        // Retrieves a single gene by its name
         public async Task<Gene?> GetByName(string name)
         {
             return await _context.Genes.FirstOrDefaultAsync(g => g.Name.ToLower() == name.ToLower());
         }
 
-        // ---------- Private Helpers ----------
-
+        // Filters genes based on criteria in the request (e.g., name, NM number, chromosome/position).
         private async Task<IList<Gene>> FilterGenes(GeneRequest request)
         {
             IQueryable<Gene> query = _context.Genes;
@@ -153,6 +159,7 @@ namespace AzDeltaKVT.Services
             return await query.OrderBy(g => g.Name).ToListAsync();
         }
 
+        // Retrieves all transcripts for a given gene ID, sorted by in-house, select, clinical, and NM number.
         private async Task<List<NmTranscript>> GetSortedTranscriptsByGeneId(string geneId)
         {
             return await _context.NmTranscripts
@@ -164,6 +171,7 @@ namespace AzDeltaKVT.Services
                 .ToListAsync();
         }
 
+        // Retrieves relevant transcripts for a gene based on the request (position, NM number).
         private async Task<List<NmTranscript>> GetRelevantTranscripts(Gene gene, GeneRequest request)
         {
             if (!string.IsNullOrEmpty(request.Chromosome) && request.Position.HasValue)
@@ -186,6 +194,7 @@ namespace AzDeltaKVT.Services
             return await GetSortedTranscriptsByGeneId(gene.Name);
         }
 
+        // Retrieves all variants associated with a given gene.
         private async Task<List<Variant>> GetVariantsForGene(Gene gene)
         {
             var nmTranscripts = await _context.NmTranscripts.Where(t => t.GeneId == gene.Name).ToListAsync();
@@ -203,6 +212,7 @@ namespace AzDeltaKVT.Services
 			return variants;
         }
 
+        // Retrieves variants relevant to the gene based on request.
         private async Task<List<Variant>> GetRelevantVariants(Gene gene, GeneRequest request)
         {
             if (!string.IsNullOrEmpty(request.Chromosome) && request.Position.HasValue)
@@ -216,6 +226,7 @@ namespace AzDeltaKVT.Services
             return await GetVariantsForGene(gene);
         }
 
+        // Constructs a GeneResult object from a gene, its transcripts, and its variants.
         private GeneResult BuildGeneResult(Gene gene, List<NmTranscript> transcripts, List<Variant> variants)
         {
             var orderedTranscripts = transcripts

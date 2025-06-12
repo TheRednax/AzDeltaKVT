@@ -27,7 +27,6 @@
     }
     else
     {
-        <!-- Gene Search Results Section -->
         <section class="mb-5">
             <h2 class="h5 text-main mb-3">Gene search result</h2>
             @if (geneResults != null && geneResults.Any())
@@ -105,7 +104,6 @@
             }
         </section>
 
-        <!-- Variants Section -->
         <section class="mb-5">
             <h2 class="h5 text-main mb-3">Variants</h2>
             @if (variantResults != null && variantResults.Any())
@@ -162,7 +160,6 @@
 
     }
 
-    <!-- Add New Gene Button -->
     <div class="mt-4">
         <button type="button" @onclick="NavigateToAddGene" 
                 class="btn btn-main fw-bold">
@@ -172,31 +169,39 @@
 </div>
 
 @code {
+    // Query parameters supplied via URL
     [Parameter, SupplyParameterFromQuery] public string? SearchType { get; set; }
     [Parameter, SupplyParameterFromQuery] public string? Gene { get; set; }
     [Parameter, SupplyParameterFromQuery] public string? Nm { get; set; }
     [Parameter, SupplyParameterFromQuery] public string? Chrom { get; set; }
     [Parameter, SupplyParameterFromQuery] public int? Position { get; set; }
 
+    // State variables for UI feedback
     private bool isLoading = true;
     private bool hasError = false;
     private string errorMessage = "";
     private string searchType = "";
 
+    // Search results
     private List<GeneResult>? geneResults;
     private List<VariantResult>? variantResults;
+
+    // Dictionary to hold transcripts grouped by gene name
     private Dictionary<string, List<NmTranscript>> geneTranscripts = new();
 
+    // Lifecycle method called on component initialization
     protected override async Task OnInitializedAsync()
     {
         await PerformSearch();
     }
 
+    // Lifecycle method called when parameters change (e.g., URL query changes)
     protected override async Task OnParametersSetAsync()
     {
         await PerformSearch();
     }
 
+    // Main search method deciding which search to perform based on parameters
     private async Task PerformSearch()
     {
         isLoading = true;
@@ -241,10 +246,11 @@
         }
     }
 
+    // Search genes by gene name
     private async Task SearchByGene(string geneName)
     {
         geneResults = await Api.SearchGenesAsync(name: geneName);
-        
+
         if (geneResults != null && geneResults.Any())
         {
             geneResults = geneResults.OrderBy(g => g.Name).ToList();
@@ -253,23 +259,24 @@
         }
     }
 
+    // Search genes by NM transcript number
     private async Task SearchByNm(string nmNumber)
     {
-	    geneResults = await Api.SearchGenesAsync(nmNumber: nmNumber);
+        geneResults = await Api.SearchGenesAsync(nmNumber: nmNumber);
 
-	    if (geneResults != null && geneResults.Any())
-	    {
-		    geneResults = geneResults.OrderBy(g => g.Name).ToList();
-		    LoadTranscriptsFromGenes();
-		    LoadVariantsFromGenes();
-	    }
-        
+        if (geneResults != null && geneResults.Any())
+        {
+            geneResults = geneResults.OrderBy(g => g.Name).ToList();
+            LoadTranscriptsFromGenes();
+            LoadVariantsFromGenes();
+        }
     }
 
+    // Search genes by chromosome and position
     private async Task SearchByPosition(string chromosome, int position)
     {
         geneResults = await Api.SearchByChromosomePositionAsync(chromosome, position);
-        
+
         if (geneResults != null && geneResults.Any())
         {
             geneResults = geneResults.OrderBy(g => g.Name).ToList();
@@ -278,6 +285,7 @@
         }
     }
 
+    // Extract transcripts from gene results and populate dictionary
     private void LoadTranscriptsFromGenes()
     {
         if (geneResults == null) return;
@@ -288,6 +296,7 @@
         }
     }
 
+    // Extract variants from gene results and flatten into a distinct list
     private void LoadVariantsFromGenes()
     {
         if (geneResults == null) return;
@@ -301,21 +310,23 @@
                 foreach (var variant in gene.Variants)
                 {
                     allVariants.Add(new VariantResult
-                    {
-                        VariantId = variant.VariantId,
-                        Chromosome = variant.Chromosome,
-                        Position = variant.Position,
-                        Reference = variant.Reference,
-                        Alternative = variant.Alternative,
-                        UserInfo = variant.UserInfo
-                    });
+                        {
+                            VariantId = variant.VariantId,
+                            Chromosome = variant.Chromosome,
+                            Position = variant.Position,
+                            Reference = variant.Reference,
+                            Alternative = variant.Alternative,
+                            UserInfo = variant.UserInfo
+                        });
                 }
             }
         }
 
+        // Remove duplicates if any
         variantResults = allVariants.Distinct().ToList();
     }
 
+    // Navigate to the gene details page, optionally including the NM transcript number
     private void NavigateToGenePage(string geneName, string? nmNumber = null)
     {
         var url = $"/gene?name={Uri.EscapeDataString(geneName)}";
@@ -326,6 +337,7 @@
         Navigation.NavigateTo(url);
     }
 
+    // Navigate to the position detail page for a specific variant by variantId
     private void NavigateToPositionPage(int variantId)
     {
         Console.WriteLine($"NavigateToPositionPage called with variantId: {variantId}");
@@ -346,6 +358,7 @@
         }
     }
 
+    // Navigate to the page for adding a new gene
     private void NavigateToAddGene()
     {
         Navigation.NavigateTo("/gene/edit");

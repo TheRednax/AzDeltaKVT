@@ -24,6 +24,8 @@ namespace AzDeltaKVT.UI.Services
             };
         }
 
+
+        // Get all genes
         public async Task<List<GeneResult>> GetAllGenesAsync()
         {
             Console.WriteLine("GetAllGenesAsync called");
@@ -55,6 +57,7 @@ namespace AzDeltaKVT.UI.Services
             return new List<GeneResult>();
         }
 
+        // Search genes by name, nmNumber or position
         public async Task<List<GeneResult>> SearchGenesAsync(string? name = null, string? nmNumber = null, int? position = null)
         {
             Console.WriteLine($"SearchGenesAsync called with: name={name}, nmNumber={nmNumber}, position={position}");
@@ -103,6 +106,7 @@ namespace AzDeltaKVT.UI.Services
             return new List<GeneResult>();
         }
 
+        // Method to get a gene by name
         public async Task<GeneResult?> GetGeneByNameAsync(string name)
         {
             var genes = await SearchGenesAsync(name: name);
@@ -110,6 +114,7 @@ namespace AzDeltaKVT.UI.Services
         }
 
 
+        // Method to get a gene by NM number
         public async Task<NmTranscriptResult?> GetTranscriptAsync(string nmNumber)
         {
             var response = await _httpClient.GetAsync($"/transcripts/{Uri.EscapeDataString(nmNumber)}");
@@ -120,6 +125,8 @@ namespace AzDeltaKVT.UI.Services
             }
             return null;
         }
+
+        // Method to get all variants and gene variants
 
         public async Task<List<VariantResult>> GetAllVariantsAsync()
         {
@@ -133,6 +140,8 @@ namespace AzDeltaKVT.UI.Services
             return new List<VariantResult>();
         }
 
+
+        // Method to get all gene variants
         public async Task<List<GeneVariantResult>> GetAllGeneVariantsAsync()
         {
             var response = await _httpClient.GetAsync("/genevariants");
@@ -145,6 +154,7 @@ namespace AzDeltaKVT.UI.Services
             return new List<GeneVariantResult>();
         }
 
+        // Method to get positions from NmId
         public async Task<List<GeneVariantResult>> GetPositionsFromNm(string? Nm = null)
         {
             var allVariants = await GetAllGeneVariantsAsync();
@@ -163,8 +173,7 @@ namespace AzDeltaKVT.UI.Services
             return filtered;
         }
 
-
-
+        // Method to search variants by chromosome, position or variantId
         public async Task<List<VariantResult>> SearchVariantsAsync(string? chromosome = null, int? position = null, int? variantId = null)
         {
             var request = new VariantRequest
@@ -197,7 +206,6 @@ namespace AzDeltaKVT.UI.Services
                 }
                 catch (JsonException)
                 {
-                    // If single object fails, try as array
                     try
                     {
                         var variantList = JsonSerializer.Deserialize<List<VariantResult>>(responseJson, _jsonOptions);
@@ -218,13 +226,7 @@ namespace AzDeltaKVT.UI.Services
             return new List<VariantResult>();
         }
 
-        public async Task<VariantResult?> GetVariantAsync(int id)
-        {
-            var variants = await SearchVariantsAsync(variantId: id);
-            return variants.FirstOrDefault();
-        }
-
-        // Gene Variant API calls - Updated to use DTOs
+        // Method to get all gene variants
         public async Task<List<GeneVariantResult>> GetGeneVariantsAsync()
         {
             var response = await _httpClient.GetAsync("/genevariants");
@@ -236,13 +238,7 @@ namespace AzDeltaKVT.UI.Services
             return new List<GeneVariantResult>();
         }
 
-        // Helper methods for complex operations - updated for DTOs
-        public async Task<List<VariantResult>> GetVariantsInGeneRangeAsync(GeneResult gene)
-        {
-            // Gene already contains variants from the backend response
-            return gene.Variants?.Cast<VariantResult>().ToList() ?? new List<VariantResult>();
-        }
-
+        // Method to get gene variants for a list of variants
         public async Task<List<GeneVariantResult>> GetGeneVariantsForVariantsAsync(List<VariantResult> variants)
         {
             var allGeneVariants = await GetGeneVariantsAsync();
@@ -251,7 +247,7 @@ namespace AzDeltaKVT.UI.Services
             return foundVariants;
         }
 
-        // Convenience method to get transcripts from gene
+        // Method to get transcripts from a gene
         public List<NmTranscriptResult> GetTranscriptsFromGene(GeneResult gene)
         {
             return gene.NmNumbers?.Select(t => new NmTranscriptResult
@@ -264,16 +260,7 @@ namespace AzDeltaKVT.UI.Services
             }).ToList() ?? new List<NmTranscriptResult>();
         }
 
-        // Convenience methods that use the updated endpoints
-        public async Task<List<VariantResult>> GetVariantsAsync(string? chromosome = null, int? position = null)
-        {
-            if (!string.IsNullOrEmpty(chromosome) || position.HasValue)
-            {
-                return await SearchVariantsAsync(chromosome, position);
-            }
-            return await GetAllVariantsAsync();
-        }
-
+        // Method to search genes by chromosome and position
         public async Task<List<GeneResult>> SearchByChromosomePositionAsync(string chromosome, int position)
         {
             Console.WriteLine($"SearchByChromosomePositionAsync called with: chromosome={chromosome}, position={position}");
@@ -322,12 +309,13 @@ namespace AzDeltaKVT.UI.Services
             return new List<GeneResult>();
         }
 
+        // Method to upload a file
         public async Task<UploadResult> UploadFileAsync(IBrowserFile file)
         {
             if (file == null)
                 throw new ArgumentNullException(nameof(file));
 
-            var maxAllowedSize = 10 * 1024 * 1024; // 10 MB max size
+            var maxAllowedSize = 10 * 1024 * 1024; 
 
             using var content = new MultipartFormDataContent();
             using var stream = file.OpenReadStream(maxAllowedSize);
@@ -344,7 +332,6 @@ namespace AzDeltaKVT.UI.Services
 
             if (response.IsSuccessStatusCode)
             {
-                // Optionally parse response content
                 string result = await response.Content.ReadAsStringAsync();
                 return JsonSerializer.Deserialize<AzDeltaKVT.Dto.Results.UploadResult>(result, _jsonOptions) ??
                        new AzDeltaKVT.Dto.Results.UploadResult();
@@ -356,6 +343,7 @@ namespace AzDeltaKVT.UI.Services
             }
         }
 
+        // Method to create a new gene
         public async Task<bool> CreateGeneAsync(GeneRequest request)
         {
             Console.WriteLine($"CreateGeneAsync called with: {request.Name}");
@@ -377,12 +365,10 @@ namespace AzDeltaKVT.UI.Services
                 var error = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"Create Gene API Error: {response.StatusCode} - {error}");
 
-                // Check voor transcript duplicate
                 if (error.Contains("Transcript already exists"))
                 {
                     throw new Exception("Failed to create gene: transcript already exists, please choose a new transcript number");
                 }
-                // Check voor gene naam duplicate
                 else if (error.Contains("combination of Transcript number and Gene name"))
                 {
                     throw new Exception("Failed to create gene: This combination of Transcript number and Gene name already exists,please choose a new transcript number or gene name");
@@ -394,6 +380,7 @@ namespace AzDeltaKVT.UI.Services
             }
         }
 
+        // Method to update an existing gene
         public async Task<bool> UpdateGeneAsync(GeneRequest request)
         {
             Console.WriteLine($"UpdateGeneAsync called with: {request.Name}");
@@ -418,6 +405,7 @@ namespace AzDeltaKVT.UI.Services
             }
         }
 
+        // Method to remove a gene by name
         public async Task<bool> RemoveGeneAsync(string geneName)
         {
             Console.WriteLine($"RemoveGeneAsync called with: {geneName}");
@@ -446,6 +434,7 @@ namespace AzDeltaKVT.UI.Services
             }
         }
 
+        //  Method to remove a transcript by NM number
         public async Task<bool> RemoveTranscriptAsync(string nmNumber)
         {
             Console.WriteLine($"RemoveTranscriptAsync called with: {nmNumber}");
@@ -467,12 +456,11 @@ namespace AzDeltaKVT.UI.Services
             }
         }
 
-
+        // Method to update a position (gene variant)
         public async Task<bool> UpdatePosition(GeneVariantRequest request)
         {
             Console.WriteLine($"UpdatePosition called with: NmId={request.NmId}, VariantId={request.VariantId}");
 
-            // 🧠 Add NmTranscript logic before sending to the API
             var genes = await SearchGenesAsync(nmNumber: request.NmId);
             if (genes == null || !genes.Any())
             {
@@ -505,7 +493,6 @@ namespace AzDeltaKVT.UI.Services
                 }
             };
 
-            // ✅ Serialize after enriching the request
             var json = JsonSerializer.Serialize(request, _jsonOptions);
             Console.WriteLine($"Update Position Request JSON: {json}");
 
@@ -527,11 +514,11 @@ namespace AzDeltaKVT.UI.Services
             }
         }
 
+        // Method to create a new position (gene variant)
         public async Task<bool> CreatePosition(GeneVariantRequest request)
         {
             Console.WriteLine($"CreatePosition called with: NmId={request.NmId}, VariantId={request.VariantId}");
 
-            // 1️⃣ Zoek genen op voor NmId
             var genes = await SearchGenesAsync(nmNumber: request.NmId);
             if (genes == null || !genes.Any())
             {
@@ -540,7 +527,6 @@ namespace AzDeltaKVT.UI.Services
 
             var gene = genes.First();
 
-            // 2️⃣ Haal juiste transcript op
             var transcripts = GetTranscriptsFromGene(gene);
             var selectedTranscript = transcripts.FirstOrDefault(t => t.NmNumber == request.NmId);
             if (selectedTranscript == null)
@@ -548,7 +534,6 @@ namespace AzDeltaKVT.UI.Services
                 throw new Exception($"Geen transcript gevonden voor NM number {request.NmId}");
             }
 
-            // 3️⃣ Bouw de volledige NmTranscript (model) op, inclusief Gene-object
             var transcriptModel = new NmTranscript
             {
                 NmNumber = selectedTranscript.NmNumber,
@@ -566,10 +551,8 @@ namespace AzDeltaKVT.UI.Services
                 }
             };
 
-            // 4️⃣ Voeg het correcte transcript toe aan het request
             request.NmTranscript = transcriptModel;
 
-            // 5️⃣ Serialiseer en verzend
             var json = JsonSerializer.Serialize(request, _jsonOptions);
             Console.WriteLine($"Create Position Request JSON: {json}");
 
@@ -587,15 +570,27 @@ namespace AzDeltaKVT.UI.Services
             {
                 var error = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"API Error: {response.StatusCode} - {error}");
+                if (error.Contains("Position is not bigger"))
+                {
+                    
+	                throw new Exception("Failed to create position: Position is not bigger or equal to start");
+                }
+                else if (error.Contains("Position is not smaller"))
+                {
+                    
+	                throw new Exception("Failed to create gene: Position is not smaller or equal to stop");
+                }
+
                 throw new Exception($"Aanmaken mislukt: {error}");
             }
         }
 
+        // Method to get position by variant ID
         public async Task<GeneVariantResult> GetPositionByVariantId(int variantId)
         {
             var requestData = new GeneVariantRequest
             {
-                NmId = "NM_001230", // ✅ verplicht veld op rootniveau
+                NmId = "NM_001230",
                 NmTranscript = new NmTranscript
                 {
                     NmNumber = "NM_001230",
@@ -648,6 +643,8 @@ namespace AzDeltaKVT.UI.Services
                 throw new Exception($"Failed to get position: {error}");
             }
         }
+
+        // Method to delete a position (gene variant)
         public async Task<bool> DeletePosition(int? variantId)
         {
             if (variantId == null)

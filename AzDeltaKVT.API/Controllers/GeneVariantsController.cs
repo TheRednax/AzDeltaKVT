@@ -41,6 +41,16 @@ namespace AzDeltaKVT.API.Controllers
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] GeneVariantRequest request)
         {
+
+	        if(request.Variant.Position < request.NmTranscript.Gene.Start)
+	        {
+		        return BadRequest("Position is not bigger or equal to start");
+	        }
+
+            if(request.Variant.Position > request.NmTranscript.Gene.Stop)
+            {
+                return BadRequest("Position is not smaller or equal to stop");
+			}
             var created = await _geneVariantService.Create(request);
             return Ok(created);
         }
@@ -57,7 +67,7 @@ namespace AzDeltaKVT.API.Controllers
         [HttpDelete("delete/{variantId}")]
         public async Task<IActionResult> Delete(int variantId)
         {
-            var geneVariant = await _geneVariantService.GetByVariantId(variantId); // ✅ Add this service method
+            var geneVariant = await _geneVariantService.GetByVariantId(variantId); 
 
             if (geneVariant == null)
             {

@@ -15,6 +15,7 @@ namespace AzDeltaKVT.Services
             _context = context;
         }
 
+        // Retrieve all transcripts from the database, including their associated gene
         public async Task<IList<NmTranscript>> Find()
         {
             return await _context.NmTranscripts
@@ -22,6 +23,7 @@ namespace AzDeltaKVT.Services
                 .ToListAsync();
         }
 
+        // Retrieve a specific transcript by NM number, including its associated gene
         public async Task<NmTranscript?> Get(string nmNumber)
         {
             return await _context.NmTranscripts
@@ -29,6 +31,7 @@ namespace AzDeltaKVT.Services
                 .FirstOrDefaultAsync(t => t.NmNumber == nmNumber);
         }
 
+        // Create a new transcript in the database
         public async Task<NmTranscript> Create(NmTranscript transcript)
         {
             _context.NmTranscripts.Add(transcript);
@@ -36,6 +39,7 @@ namespace AzDeltaKVT.Services
             return transcript;
         }
 
+        // Update an existing transcript with new data if it exists
         public async Task<bool> Update(NmTranscript transcript)
         {
             var existing = await _context.NmTranscripts.FindAsync(transcript.NmNumber);
@@ -50,6 +54,7 @@ namespace AzDeltaKVT.Services
             return true;
         }
 
+        // Delete a transcript by NM number if it exists
         public async Task<bool> Delete(string nmNumber)
         {
             var transcript = await _context.NmTranscripts.FindAsync(nmNumber);

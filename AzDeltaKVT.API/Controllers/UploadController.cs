@@ -16,43 +16,30 @@ namespace AzDeltaKVT.API.Controllers
 			_UploadService = uploadService;
 		}
 
-		[HttpPost]
+        // POST /upload/file
+        [HttpPost]
 		public async Task<IActionResult> UploadFile( IFormFile tsvFile)
 		{
 			try
 			{
 				var request = new UploadRequest { TsvFile = tsvFile };
 				var result = await _UploadService.UploadTsvFile(request);
-
 				var sb = new StringBuilder();
-
-				// Voeg een header toe, optioneel
 				sb.AppendLine("Chromosome\tPosition\tReference\tAlternative\tGeneName\tNmNumber\tIsInHouse\tBiologicalEffect\tClassification");
-
 				foreach (var variant in result.Rows)
 				{
 					sb.AppendLine($"{variant.Chromosome}\t{variant.Position}\t{variant.Reference}\t{variant.Alternative}\t{variant.GeneName}\t{variant.NmNumber}\t{variant.IsInHouse}\t{variant.BiologicalEffect}\t{variant.Classification}");
 				}
-
 				var byteArray = Encoding.UTF8.GetBytes(sb.ToString());
-
-				var fileName = $"{Path.GetFileNameWithoutExtension(tsvFile.FileName)}_{DateTime.UtcNow:yyyyMMddHHmmss}.tsv"; // Unique filename
-
+				var fileName = $"{Path.GetFileNameWithoutExtension(tsvFile.FileName)}_{DateTime.UtcNow:yyyyMMddHHmmss}.tsv"; 
 				var uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "UploadedFiles");
-
 				if (!Directory.Exists(uploadFolder))
 					Directory.CreateDirectory(uploadFolder);
-
 				var filePath = Path.Combine(uploadFolder, fileName);
-
 				await System.IO.File.WriteAllBytesAsync(filePath, byteArray);
-
-				// Instead of IFormFile, provide a download URL in the result
 				var downloadUrl = Url.Action("DownloadFile", "Upload", new { fileName = fileName }, Request.Scheme);
-
 				result.DownloadUrl = downloadUrl;
 				result.FileName = fileName;
-
 				return Ok(result);
 			}
 			catch (Exception e)
@@ -62,7 +49,8 @@ namespace AzDeltaKVT.API.Controllers
 			}
 		}
 
-		[HttpGet("download/{fileName}")]
+        // GET /upload/download/{fileName}
+        [HttpGet("download/{fileName}")]
 		public IActionResult DownloadFile(string fileName)
 		{
 			var uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "UploadedFiles");

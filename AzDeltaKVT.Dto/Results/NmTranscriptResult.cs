@@ -12,7 +12,7 @@ namespace AzDeltaKVT.Dto.Results
     {
         public string NmNumber { get; set; }
 
-        public string GeneId { get; set; }  // This should match Gene.Name (FK)
+        public string GeneId { get; set; } 
         [ForeignKey(nameof(GeneId))]
         public Gene Gene { get; set; }
 
