@@ -240,6 +240,11 @@
             errorMessage = "Gene name and NM number are required";
             return;
         }
+        if (string.IsNullOrWhiteSpace(chromosome))
+        {
+	        errorMessage = "Chromosome is required";
+	        return;
+        }
         if (start <= 0)
         {
 	        errorMessage = "Start should be bigger than 0";
