@@ -106,22 +106,19 @@ namespace AzDeltaKVT.Core.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("VariantId"));
 
                     b.Property<string>("Alternative")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Chromosome")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Position")
+                    b.Property<int?>("Position")
                         .HasColumnType("int");
 
                     b.Property<string>("Reference")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserInfo")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("VariantId");
