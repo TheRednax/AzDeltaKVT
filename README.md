@@ -4,10 +4,16 @@ https://www.figma.com/design/06Imh9wh8HBFWP798KUXSq/AzDeltaKVT?node-id=0-1&t=jth
 Added Kanban project to have some overview for what we need to do
 
 # ---------------------------------------------------------------------------------------------------------------------------------------
+#           Connection to database
+# ---------------------------------------------------------------------------------------------------------------------------------------
+  "ConnectionStrings:DefaultConnection": "Server=sqlserver;Database=AzDeltaKVTDatabase;User Id=sa;Password=Vives2023!;TrustServerCertificate=True;"
+
+# ---------------------------------------------------------------------------------------------------------------------------------------
 #           How to start docker (via bash)
 # ---------------------------------------------------------------------------------------------------------------------------------------
 cd directory/to/your/docker-compose.yml   --> Go to the directory where docker-compose is located
 docker-compose up -d --build              --> This will build/create/run your docker with port 1433
+
 
 # ---------------------------------------------------------------------------------------------------------------------------------------
 #           Explanation Dockerfile API
