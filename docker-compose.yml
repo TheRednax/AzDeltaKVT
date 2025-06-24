@@ -2,15 +2,17 @@ version: '3.9'
 
 services:
   db:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: sqlserver
+    image: mariadb:latest
+    container_name: mariadb
     environment:
-      - SA_PASSWORD=Vives2023!
-      - ACCEPT_EULA=Y
+      - MARIADB_ROOT_PASSWORD=Vives2023!
+      - MARIADB_DATABASE=AzDeltaKVTDatabase
+      - MARIADB_USER=appuser
+      - MARIADB_PASSWORD=Vives2023!
     ports:
-      - "1433:1433"
+      - "3306:3306"
     volumes:
-      - sqlserverdata:/var/opt/mssql
+      - mariadbdata:/var/lib/mysql
 
   api:
     build:
@@ -19,10 +21,10 @@ services:
     depends_on:
       - db
     environment:
-      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=AzDeltaKVTDatabase;User Id=sa;Password=Vives2023!;TrustServerCertificate=True;
+      - ConnectionStrings__DefaultConnection=Server=mariadb;Port=3306;Database=AzDeltaKVTDatabase;User=appuser;Password=Vives2023!;
     ports:
       - "8080:8080"
-    command: ["sh", "-c", "sleep 5 && dotnet AzDeltaKVT.API.dll"]
+    command: ["sh", "-c", "sleep 10 && dotnet AzDeltaKVT.API.dll"]
 
   ui:
     build:
@@ -34,4 +36,4 @@ services:
       - api
 
 volumes:
-  sqlserverdata:
+  mariadbdata:
