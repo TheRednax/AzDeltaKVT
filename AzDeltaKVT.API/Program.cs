@@ -3,7 +3,7 @@ using AzDeltaKVT.Core;
 using AzDeltaKVT.Dto.Requests;
 using AzDeltaKVT.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,13 +18,19 @@ builder.Services.AddCors(options =>
     });
 });
 
+// ? DbContext configureren met MariaDB (Pomelo)
 builder.Services.AddDbContext<AzDeltaKVTDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        new MySqlServerVersion(new Version(10, 11, 2))
+    )
+);
 
+
+// ? Dependency injection
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
 
 builder.Services.AddScoped<GeneService>();
 builder.Services.AddScoped<TranscriptService>();
@@ -34,10 +40,11 @@ builder.Services.AddScoped<UploadService>();
 
 var app = builder.Build();
 
-
+// ? Automatische migraties en seeding
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AzDeltaKVTDbContext>();
+
     context.Database.Migrate();
 
     if (!context.Genes.Any())
